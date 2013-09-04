@@ -8,11 +8,11 @@
 
 #include "FliteTTSBridge.h"
 
-#ifdef WIN32
-#include <flite.h>
-#else
+//#ifdef WIN32
+//#include <flite.h>
+//#else
 #include <flite/flite.h>
-#endif
+//#endif
 
 #include "FliteTTSWorker.h"
 
@@ -43,4 +43,5 @@ void FliteTTSBridge::process(const std::string& text) {
 
 void FliteTTSBridge::close() {
     unregister_cmu_us_kal(v);
+    threadPool.waitForDone();
 }

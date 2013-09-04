@@ -77,16 +77,16 @@ pair<int,string> TesseractBridge::process(const Mat& img, Rect& r) {
             return make_pair(0, "");
         }
             
-            if (conf > 80.0) {
+//            if (conf > 80.0) {
                 r.x += x1;
                 r.y += y1;
                 r.width = x2-x1;
                 r.height = y2-y1;
                 return make_pair((int)conf, theword);
-            } else {
-                return make_pair(0, "");
-            }
-            
+//            } else {
+//                return make_pair(0, "");
+//            }
+        
 //        } while (ri->Next(level));
     }
 /*

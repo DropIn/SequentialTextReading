@@ -60,14 +60,18 @@ protected:
                     
                     frame_mutex.unlock();
                     
-                    str_mutex.lock();
-                    str.processImage(frame_downscale);
-                    str_mutex.unlock();
+                    if(!paused) {
+                        str_mutex.lock();
+                        str.processImage(frame_downscale);
+                        str_mutex.unlock();
+                    } else {
+                        rectangle(frame_downscale, str.getFocusArea(), Scalar(255));
+                    }
 //                    newFrame(QImage(frame_rgba.data, frame_rgba.cols, frame_rgba.rows,QImage::Format_RGB32));
                     newFrame();
                 }
             }
-            msleep(30);
+            msleep(15);
 //            el.processEvents(QEventLoop::AllEvents, 30);
         }
     }
@@ -97,6 +101,8 @@ public:
         }
         currentCamera = -1;
         vc.open(file);
+        if(vc.isOpened())
+            vc >> frame;
     }
 
     const Mat& getCurrentFrame() const { return frame_downscale; }

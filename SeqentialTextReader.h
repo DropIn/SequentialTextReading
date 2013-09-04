@@ -130,10 +130,12 @@ struct STRWord {
     TextConf                    text;
     vector<pair<Point,Mat> > 	chars;
     int                         times_seen;
+    bool                        sent_to_tts;
     
     STRWord(const Mat& p, TextConf t) {
         patches.push_back(p); text = t;
         times_seen = 0;
+        sent_to_tts = false;
     }
 };
         
@@ -160,14 +162,16 @@ class SequentialTextReader : public AbstractAlgorithm {
     Rect                                focusArea, origFocusArea;
     
     static const float                  POINT_TO_LINE_THRESH = 15.0f;
-    static const float                  MAX_CONTOUR_AREA = 500.0f;
+    static const float                  MAX_CONTOUR_AREA = 1500.0f;
     static const float                  MIN_CONTOUR_AREA = 20.0f;
     static const int                    MIN_POINTS_FOR_LINE = 7;
     int                                 ADAPTIVE_THRESH;
-    static const float                  LINE_ANGLE_THRESH = 0.1;
+    static const float                  LINE_ANGLE_THRESH = 0.2;
     static const int                    TRACKED_WORD_UNSEEN_THRESH = -7;
+    static const int                    TRACKED_WORD_UNSEEN_UPPER_THRESH = 10;
     static const int                    TRACKED_LEFTOVERS_UNSEEN_THRESH = -10;
     float                               NEW_WORD_CUTOFF_POSITION_FACTOR;
+    static const int                    NEW_WORD_CONF_THRESH = 76;
     
     vector<STRLine> findCandidateLines(Mat& img) {
         vector<STRLine> lines;
@@ -192,6 +196,7 @@ class SequentialTextReader : public AbstractAlgorithm {
         vector<pair<float,STRLine> > lines_and_err;
 //        int low_b = focusArea.y, high_b = focusArea.y+focusArea.height;
         rectangle(img, focusArea, Scalar(255));
+        rectangle(img, origFocusArea, Scalar(255,128,128));
 
         for (int i=0; i<ps.size(); i++) {
 //            if(ps[i].y < low_b || ps[i].y > high_b) continue; //prune extremal points
@@ -423,6 +428,7 @@ class SequentialTextReader : public AbstractAlgorithm {
             Size lookupSize = trackedWords[i].second.patches.back().size();
             
             if(fabsf((lookupPoint.y+lookupSize.height/2)-(focusArea.y+focusArea.height/2)) > 100) continue;
+            if(pointToLineD(Point2f(lookupPoint.x + lookupSize.width/2,lookupPoint.y+lookupSize.height/2), trackedLine.line) > POINT_TO_LINE_THRESH*2) continue;
 
             rectangle(output_img, lookupPoint, lookupPoint+Point(lookupSize), Scalar(0,255));
             
@@ -449,10 +455,10 @@ class SequentialTextReader : public AbstractAlgorithm {
 //                imshow("blurry"+SSTR(i),blurryRGB);
                 
                 //check if block is too blurry
-                if(black_to_white_ratio < 0.2)
+                if(black_to_white_ratio < 0.25)
                     continue;
             } else
-                trackedWords[i].second.times_seen = MIN(5,trackedWords[i].second.times_seen+1);
+                trackedWords[i].second.times_seen = MIN(TRACKED_WORD_UNSEEN_UPPER_THRESH,trackedWords[i].second.times_seen+1);
             
             //either word was lost or moved too far back
             if(trackedWords[i].second.times_seen < TRACKED_WORD_UNSEEN_THRESH ||
@@ -576,7 +582,7 @@ class SequentialTextReader : public AbstractAlgorithm {
         return res;
     }
     
-    void findNewWords(const Mat& orig, Mat& img) {
+    int findNewWords(const Mat& orig, Mat& img) {
         //find rightmost tracked Word
         int leftCutoff = -1;
         for (int j=0; j<trackedWords.size(); j++) {
@@ -595,7 +601,7 @@ class SequentialTextReader : public AbstractAlgorithm {
         leftCutoff += 5;
         
         //only continue with OCR if cutoff point approaches middle of image
-        if(leftCutoff > img.cols*NEW_WORD_CUTOFF_POSITION_FACTOR) return;
+        if(leftCutoff > img.cols*NEW_WORD_CUTOFF_POSITION_FACTOR) return 2;
         
         //find candidate points that are not part of known words
         vector<Point2f> prunedPoints; Characters prunedCharacters;
@@ -621,7 +627,7 @@ class SequentialTextReader : public AbstractAlgorithm {
             stringstream strm; strm << txt.second << " ("<<txt.first<<")";
             putText(img, strm.str(), r.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, Scalar(0,0,255));
             
-            if(txt.first > 80 && txt.second.size() > 0) {
+            if(txt.first > NEW_WORD_CONF_THRESH && txt.second.size() > 0) {
                 rectangle(img, r, Scalar(0,255,0));
                 trackedWords.push_back(make_pair(r.tl(),STRWord(orig(r),txt)));
                 cout << txt.second << endl;
@@ -630,6 +636,7 @@ class SequentialTextReader : public AbstractAlgorithm {
                 newWordFound(txt.second);
             }
         }
+        return prunedPoints.size();
     }
     
     void prunePointsBasedOnTrackedLine() {
@@ -688,6 +695,7 @@ public:
     
     void setFocusLocation(int y) { focusArea.y = y; origFocusArea.y = y; }
     void setFocusSize(int s) { focusArea.height = s; origFocusArea.height = s; }
+    const Rect& getFocusArea() { return origFocusArea; }
     
     void reset() {
         foundFirstWord = false;
@@ -696,6 +704,8 @@ public:
         trackedWords.clear();
         trackedLeftovers.clear();
         lastMotion = Vec2f(0,0);
+        focusArea = origFocusArea;
+        trackedLine.line = Point2f(0,0);
     }
     
     Mat adaptiveForGUI;
@@ -710,7 +720,7 @@ public:
         adaptiveThreshold(grey, adaptive_, 255, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY, ADAPTIVE_THRESH, 30);
         adaptive_.copyTo(adaptiveForGUI);
         
-        cvtColor(adaptive_, img, CV_GRAY2BGR);
+//        cvtColor(adaptive_, img, CV_GRAY2BGR);
 //        threshold(grey, adaptive_, 128, 255, THRESH_BINARY + THRESH_OTSU);
 //        imshow("adaptive",adaptive_);
         
@@ -734,16 +744,18 @@ public:
             vector<pair<float,STRLine> > lines_and_distanceToFocus;
             int midy = origFocusArea.y+origFocusArea.height/2;
             for(int i=0;i<lines.size();i++) {
-                lines_and_distanceToFocus.push_back(make_pair(fabsf(lines[i].line.y - midy),lines[i]));
+                lines_and_distanceToFocus.push_back(make_pair(fabsf((2*lines[i].line.y + lines[i].line.x*img.cols)/2 - midy),lines[i]));
             }
             sort(lines_and_distanceToFocus.begin(), lines_and_distanceToFocus.end(), sortbyfirst<float,STRLine>);
             
             for (int i=0; i<lines_and_distanceToFocus.size(); i++) {
                 STRLine ln = lines_and_distanceToFocus[i].second;
+                putText(img, SSTR(lines_and_distanceToFocus[i].first), Point(5,ln.line.y), CV_FONT_HERSHEY_PLAIN, 1.0, Scalar(0,0,255));
+                
                 Rect r;
                 TextConf txt = getWordFromContoursAndImage(ln.characters, img, orig, r);
                 
-                if(txt.first > 80 && txt.second.length() > 0) {
+                if(txt.first > NEW_WORD_CONF_THRESH && txt.second.length() > 0) {
                     stringstream strm; strm << txt.second << " ("<<txt.first<<")";
                     putText(img, strm.str(), r.tl(), CV_FONT_HERSHEY_PLAIN, 1.0, Scalar(0,0,255));
 
@@ -760,6 +772,7 @@ public:
                     textFound();
                     break;
                 }
+                 
             }
         } else {
             CV_PROFILE(getCandidatePoints(img, adaptive);)
@@ -775,23 +788,40 @@ public:
             if(lines.size() > 0) {
                 trackedLine = lines[0];
             }
-            focusArea.y = (trackedLine.line.y + trackedLine.line.x*img.cols + trackedLine.line.y)/2 - focusArea.height/2;
             focusArea.height = MIN(focusArea.height+1,img.rows/3);
+            focusArea.y = (trackedLine.line.y + trackedLine.line.x*img.cols + trackedLine.line.y)/2 - focusArea.height/2;
+            
+//            origFocusArea.y = 0.95*(origFocusArea.y + origFocusArea.height/2) + 0.05*(focusArea.y+focusArea.height/2) - origFocusArea.height/2;
             
             //TODO: see if line is escaping up or down, or by distance
                         
             Vec2f motion;
             CV_PROFILE(motion = trackWords(orig,img);)
             
+            /*
+            for(int i=0;i<trackedWords.size();i++)
+            {
+                if(!trackedWords[i].second.sent_to_tts && trackedWords[i].second.times_seen >= TRACKED_WORD_UNSEEN_UPPER_THRESH)
+                {
+                    newWordFound(trackedWords[i].second.text.second);
+                    trackedWords[i].second.sent_to_tts = true;
+                }
+            }
+             */
+            
             if(norm(motion) > 0)
                 lastMotion = motion;
             
             CV_PROFILE(trackLeftovers(motion,orig,img);)
             
-            CV_PROFILE(findNewWords(orig, img);)
+            int num_chars_end_of_line = 0;
+            CV_PROFILE(num_chars_end_of_line = findNewWords(orig, img);)
+            
+            int trackedLineMidpY = (trackedLine.line.y + trackedLine.line.x*img.cols + trackedLine.line.y)/2;
+            int origFocusAreaMidpY = origFocusArea.y + origFocusArea.height/2;
             
             //go back to seek mode...
-            if(trackedWords.size() == 0 && trackedLeftovers.size() == 0) {
+            if((trackedWords.size() == 0 && trackedLeftovers.size() == 0) || fabsf(trackedLineMidpY-origFocusAreaMidpY) > 80) {
                 endOfLine();
                 foundFirstWord = false;
                 focusArea = origFocusArea;

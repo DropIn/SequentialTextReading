@@ -122,14 +122,14 @@ void ViewController::say() {
 
 void ViewController::newWordFound(std::string s) {
     QLineEdit* le = parentWidget()->findChild<QLineEdit*>("lineEdit_cameraText");
-    le->setText(QString(s.c_str()).trimmed());
+    le->setText(QString::fromUtf8(s.c_str()).trimmed());
     
     QTextEdit* te = parentWidget()->findChild<QTextEdit*>("textEdit_cameraText");
     QString txt = te->toPlainText();
-    QString newtxt = QString(s.c_str()).trimmed() + " ";
+    QString newtxt = QString::fromUtf8(s.c_str()).trimmed() + " ";
     
     if(!txt.endsWith(newtxt)) {
         te->setPlainText(txt + newtxt);
-        ftb.process(QString(s.c_str()).trimmed().toStdString());
+        ftb.process(QString::fromUtf8(s.c_str()).trimmed().toStdString());
     }
 }
