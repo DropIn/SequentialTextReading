@@ -14,6 +14,8 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 tesseract::TessBaseAPI  api;
+
+//TODO change this is to a local folder that goes with the executable
 string tessdata_dir = "/usr/local/Cellar/tesseract/3.02.02/share/tessdata/";
 
 void TesseractBridge::init() {
@@ -44,11 +46,9 @@ void TesseractBridge::close() {
 pair<int,string> TesseractBridge::process(const Mat& img, Rect& r) {
 //    imshow("tesseract",img(r));
     Mat tmp; cvtColor(img(r), tmp, CV_BGR2GRAY);
-//     cv::equalizeHist(tmp, tmp);
     adaptiveThreshold(tmp, tmp, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 51, 35);
 //    imshow("eqhist", tmp);
     
-//    char* cstr = api.TesseractRect(img.data, img.channels(), img.cols*img.channels(), r.x, r.y, r.width, r.height);
     char* cstr = api.TesseractRect(tmp.data, tmp.channels(), tmp.cols*tmp.channels(), 0, 0, tmp.cols, tmp.rows);
     
     delete[] cstr;
@@ -56,57 +56,30 @@ pair<int,string> TesseractBridge::process(const Mat& img, Rect& r) {
     tesseract::ResultIterator* ri = api.GetIterator();
     tesseract::PageIteratorLevel level = tesseract::RIL_WORD;
     if (ri != 0) {
-//        do {
-            const char* word = ri->GetUTF8Text(level);
+        const char* word = ri->GetUTF8Text(level);
         
         if(!word) return make_pair(0, "");
         
-            float conf = ri->Confidence(level);
-            int x1, y1, x2, y2;
-            ri->BoundingBox(level, &x1, &y1, &x2, &y2);
-//            printf("word: '%s';  \tconf: %.2f; BoundingBox: %d,%d,%d,%d;\n",
-//                   word, conf, x1, y1, x2, y2);
-            string theword(word);
-            delete[] word;
+        float conf = ri->Confidence(level);
+        int x1, y1, x2, y2;
+        ri->BoundingBox(level, &x1, &y1, &x2, &y2);
+//        printf("word: '%s';  \tconf: %.2f; BoundingBox: %d,%d,%d,%d;\n",
+//               word, conf, x1, y1, x2, y2);
+        string theword(word);
+        delete[] word;
         
         bool allnonalphanom = true;
         for (int i=0; i<theword.size(); i++) {
-            allnonalphanom = allnonalphanom && !isalnum(theword[i]);
+            allnonalphanom = allnonalphanom && !(isalnum(theword[i]) || theword[i] == '"' || theword[i] == '.' || theword[i] == ',' || theword[i] == '?' || theword[i] == '!' || theword[i] == '\'');
         }
         if (allnonalphanom) {
             return make_pair(0, "");
         }
             
-//            if (conf > 80.0) {
-                r.x += x1;
-                r.y += y1;
-                r.width = x2-x1;
-                r.height = y2-y1;
-                return make_pair((int)conf, theword);
-//            } else {
-//                return make_pair(0, "");
-//            }
-        
-//        } while (ri->Next(level));
+        r.x += x1;
+        r.y += y1;
+        r.width = x2-x1;
+        r.height = y2-y1;
+        return make_pair((int)conf, theword);
     }
-/*
-    
-    int* confs = api.AllWordConfidences();
-    int conf = 0;
-    for(int i=0;;i++) {
-        if(confs[i] == -1) break;
-//        cout << confs[i] << endl;
-        conf = confs[i];
-    }
-    delete[] confs;
-    int len = strlen(cstr);
-    if(len <= 0) return make_pair(0, "");
-    
-    string txt(cstr,len-2);
-//    std::stringstream trimmer; trimmer << cstr; trimmer >> txt;
-    
-//    cout << "tesseract: " << txt << endl;
-    
-    return make_pair(conf, txt);
- */
 }

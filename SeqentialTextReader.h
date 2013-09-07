@@ -163,7 +163,7 @@ class SequentialTextReader : public AbstractAlgorithm {
     
     static const float                  POINT_TO_LINE_THRESH = 15.0f;
     static const float                  MAX_CONTOUR_AREA = 1500.0f;
-    static const float                  MIN_CONTOUR_AREA = 20.0f;
+    static const float                  MIN_CONTOUR_AREA = 100.0f;
     static const int                    MIN_POINTS_FOR_LINE = 7;
     int                                 ADAPTIVE_THRESH;
     static const float                  LINE_ANGLE_THRESH = 0.2;
@@ -621,7 +621,7 @@ class SequentialTextReader : public AbstractAlgorithm {
             circle(img, prunedPoints[i], 5, Scalar::all(255));
         }
         
-        if(prunedPoints.size() >= 2) {
+        if(prunedPoints.size() >= 2 || (prunedPoints.size() == 1 && contourArea(prunedCharacters[0])>200.0)) {
             Rect r; r.x = leftCutoff; r.width = img.cols - leftCutoff;
             TextConf txt = getWordFromContoursAndImage(prunedCharacters, img, orig, r);
             stringstream strm; strm << txt.second << " ("<<txt.first<<")";
