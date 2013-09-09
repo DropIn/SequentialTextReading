@@ -42,12 +42,12 @@ public slots:
     void connectPort();
     void fillPortsInfo();
 
-    void textFound() {ad.send(ArduinoDriver::TEXT_FOUND);};
-    void endOfLine() {ad.send(ArduinoDriver::END_OF_LINE);};
-    void sendUp() {ad.send(ArduinoDriver::UP);};
-    void sendDown() {ad.send(ArduinoDriver::DOWN);};
-    void sendDistance(int val) {ad.send(val);};
-    void sendClear() {ad.send(ArduinoDriver::CLEAR);};
+    void textFound();
+    void endOfLine();
+    void sendUp();
+    void sendDown();
+    void sendDistance(int val);
+    void sendClear();
 };
 
 #endif

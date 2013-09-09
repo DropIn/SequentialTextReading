@@ -21,11 +21,12 @@ public:
     
     /**
      * Process an image patch with OCR for a single word
-     * @param img The image to process, assumed RGB24
+     * @param orig The image to process, assumed RGB24
+     * @param img An output image to draw on
      * @param r The ROI in the image
      * @return The first word in the image and it's confidence level. May be <0,""> in case of error.
      **/
-    pair<int,string> process(const Mat& img, Rect& r);
+    pair<int,string> process(const Mat& orig, Mat& img, Rect& r);
     
     void close();
 };

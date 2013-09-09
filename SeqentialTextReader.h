@@ -171,7 +171,7 @@ class SequentialTextReader : public AbstractAlgorithm {
     static const int                    TRACKED_WORD_UNSEEN_UPPER_THRESH = 10;
     static const int                    TRACKED_LEFTOVERS_UNSEEN_THRESH = -10;
     float                               NEW_WORD_CUTOFF_POSITION_FACTOR;
-    static const int                    NEW_WORD_CONF_THRESH = 76;
+    static const int                    NEW_WORD_CONF_THRESH = 78;
     
     vector<STRLine> findCandidateLines(Mat& img) {
         vector<STRLine> lines;
@@ -568,16 +568,16 @@ class SequentialTextReader : public AbstractAlgorithm {
             copy(characters[c].begin(), characters[c].end(), back_inserter(allcontours));
         Rect r_ = boundingRect(allcontours);
 //        r = r_;
-        r.y = r_.y - 10;
+        r.y = r_.y - 15;
         if(r.width <= 0) {
             r.width = r_.width + 10;
             r.x = r_.x - 5;
         }
-        r.height = r_.height + 20;
+        r.height = r_.height + 30;
         r &= Rect(0,0,img.cols,img.rows);
         rectangle(img, r, Scalar(0,0,255));
         
-        TextConf res = TB.process(orig, r);
+        TextConf res = TB.process(orig, img, r);
         //        r = r_;
         return res;
     }
@@ -597,8 +597,8 @@ class SequentialTextReader : public AbstractAlgorithm {
                 leftCutoff = rightEndOfWord;
             }
         }
-        line(img, Point(leftCutoff,0), Point(leftCutoff,img.rows), Scalar(0,0,255));
         leftCutoff += 5;
+        line(img, Point(leftCutoff,0), Point(leftCutoff,img.rows), Scalar(0,0,255));
         
         //only continue with OCR if cutoff point approaches middle of image
         if(leftCutoff > img.cols*NEW_WORD_CUTOFF_POSITION_FACTOR) return 2;
@@ -607,11 +607,6 @@ class SequentialTextReader : public AbstractAlgorithm {
         vector<Point2f> prunedPoints; Characters prunedCharacters;
         for (int i=0; i<candidatePoints.size(); i++) {
             bool outside = candidatePoints[i].x > leftCutoff;
-            //            for (int j=0; j<trackedWords.size(); j++) {
-            //                if(candidatePoints[i].inside(Rect(trackedWords[j].first-Point(5,5),trackedWords[j].second.patches.back().size()+Size(10,10)))) {
-            //                    outside = false;
-            //                }
-            //            }
             if(outside) {
                 prunedPoints.push_back(candidatePoints[i]);
                 prunedCharacters.push_back(candidateContours[i]);
@@ -820,11 +815,16 @@ public:
             int trackedLineMidpY = (trackedLine.line.y + trackedLine.line.x*img.cols + trackedLine.line.y)/2;
             int origFocusAreaMidpY = origFocusArea.y + origFocusArea.height/2;
             
-            //go back to seek mode...
-            if((trackedWords.size() == 0 && trackedLeftovers.size() == 0) || fabsf(trackedLineMidpY-origFocusAreaMidpY) > 80) {
+            if((trackedWords.size() == 0 && trackedLeftovers.size() == 0) ||
+               fabsf(trackedLineMidpY-origFocusAreaMidpY) > origFocusArea.height)
+            {
+                //tracking failed, go back to seek mode...
                 endOfLine();
-                foundFirstWord = false;
-                focusArea = origFocusArea;
+                reset();
+            }
+            if(trackedWords.size() > 0 && num_chars_end_of_line < 2) {
+                //words are tracked but there is nothing further down the line
+                endOfLine();
             }
         }
         

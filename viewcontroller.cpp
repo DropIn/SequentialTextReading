@@ -17,6 +17,7 @@
 #include "QExtSerialPort-1.2rc/qextserialenumerator.h"
 #include <QDebug>
 #include <QTextEdit>
+#include <QPushButton>
 
 OpenCVCameraThread ocvt;
 //QTSequentialTextReader str;
@@ -90,6 +91,7 @@ void ViewController::togglePause(bool b) { ocvt.setPaused(b); }
 void ViewController::loadFile() {
     QString filename = QFileDialog::getOpenFileName(this, tr("Open Video"), "", tr("Video Files (*.avi *.mov *.mp4)"));
     if(filename.length()>0) {
+        resetTracking();
         ocvt.videoFile(filename.toStdString());
     }
 }
@@ -132,4 +134,18 @@ void ViewController::newWordFound(std::string s) {
         te->setPlainText(txt + newtxt);
         ftb.process(QString::fromUtf8(s.c_str()).trimmed().toStdString());
     }
+
+    QPushButton* pb = parentWidget()->findChild<QPushButton*>("pushButton_endOfLine");
+    pb->setStyleSheet("");
 }
+
+void ViewController::textFound() {ad.send(ArduinoDriver::TEXT_FOUND);};
+void ViewController::endOfLine() {
+    QPushButton* pb = parentWidget()->findChild<QPushButton*>("pushButton_endOfLine");
+    pb->setStyleSheet("color: red;");
+    ad.send(ArduinoDriver::END_OF_LINE);
+};
+void ViewController::sendUp() {ad.send(ArduinoDriver::UP);};
+void ViewController::sendDown() {ad.send(ArduinoDriver::DOWN);};
+void ViewController::sendDistance(int val) {ad.send(val);};
+void ViewController::sendClear() {ad.send(ArduinoDriver::CLEAR);};

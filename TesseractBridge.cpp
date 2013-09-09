@@ -43,11 +43,13 @@ void TesseractBridge::close() {
     api.End();
 }
 
-pair<int,string> TesseractBridge::process(const Mat& img, Rect& r) {
+pair<int,string> TesseractBridge::process(const Mat& img, Mat& out, Rect& r) {
 //    imshow("tesseract",img(r));
     Mat tmp; cvtColor(img(r), tmp, CV_BGR2GRAY);
     adaptiveThreshold(tmp, tmp, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 51, 35);
 //    imshow("eqhist", tmp);
+    
+//    cvtColor(tmp, out(Rect(0,0,r.width,r.height)), CV_GRAY2BGR);
     
     char* cstr = api.TesseractRect(tmp.data, tmp.channels(), tmp.cols*tmp.channels(), 0, 0, tmp.cols, tmp.rows);
     
@@ -72,14 +74,13 @@ pair<int,string> TesseractBridge::process(const Mat& img, Rect& r) {
         for (int i=0; i<theword.size(); i++) {
             allnonalphanom = allnonalphanom && !(isalnum(theword[i]) || theword[i] == '"' || theword[i] == '.' || theword[i] == ',' || theword[i] == '?' || theword[i] == '!' || theword[i] == '\'');
         }
-        if (allnonalphanom) {
-            return make_pair(0, "");
-        }
-            
+        if (allnonalphanom) return make_pair(0, "");
+        
         r.x += x1;
         r.y += y1;
         r.width = x2-x1;
         r.height = y2-y1;
         return make_pair((int)conf, theword);
-    }
+    } else
+        return make_pair(0, "");
 }
