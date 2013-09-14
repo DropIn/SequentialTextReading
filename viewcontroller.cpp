@@ -137,9 +137,15 @@ void ViewController::newWordFound(std::string s) {
 
     QPushButton* pb = parentWidget()->findChild<QPushButton*>("pushButton_endOfLine");
     pb->setStyleSheet("");
+    pb = parentWidget()->findChild<QPushButton*>("pushButton_textFound");
+    pb->setStyleSheet("");
 }
 
-void ViewController::textFound() {ad.send(ArduinoDriver::TEXT_FOUND);};
+void ViewController::textFound() {
+    QPushButton* pb = parentWidget()->findChild<QPushButton*>("pushButton_textFound");
+    pb->setStyleSheet("color: red;");
+    ad.send(ArduinoDriver::TEXT_FOUND);
+};
 void ViewController::endOfLine() {
     QPushButton* pb = parentWidget()->findChild<QPushButton*>("pushButton_endOfLine");
     pb->setStyleSheet("color: red;");
