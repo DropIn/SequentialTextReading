@@ -27,10 +27,11 @@ ViewController::ViewController(QWidget* parent):QFrame(parent) {
 //    connect(&ocvt, SIGNAL(newFrame(const QImage&)), this, SLOT(newFrame(const QImage&)));
     connect(&ocvt, SIGNAL(newFrame()), this, SLOT(newFrame()));
     connect(&ocvt,SIGNAL(newWordFound(std::string)), this, SLOT(newWordFound(std::string)));
-    connect(&ocvt,SIGNAL(textFound()), this, SLOT(textFound()));
-    connect(&ocvt,SIGNAL(endOfLine()), this, SLOT(endOfLine()));
-    connect(&ocvt,SIGNAL(escapeDistance(int)), this, SLOT(sendDistance(int)));
+//    connect(&ocvt,SIGNAL(textFound()), this, SLOT(textFound()));
+//    connect(&ocvt,SIGNAL(endOfLine()), this, SLOT(endOfLine()));
+//    connect(&ocvt,SIGNAL(escapeDistance(int)), this, SLOT(sendDistance(int)));
 
+    ocvt.ad = &ad;
     ocvt.setDownscale(false);
     ocvt.start();
     
@@ -69,7 +70,7 @@ void ViewController::fillPortsInfo()
                 << info.physName
                 << (info.vendorID ? QString::number(info.vendorID, 16) : QString())
                 << (info.productID ? QString::number(info.productID, 16) : QString());
-                
+
                 cb->addItem(list.first(), list);
             }
         }
@@ -144,12 +145,12 @@ void ViewController::newWordFound(std::string s) {
 void ViewController::textFound() {
     QPushButton* pb = parentWidget()->findChild<QPushButton*>("pushButton_textFound");
     pb->setStyleSheet("color: red;");
-    ad.send(ArduinoDriver::TEXT_FOUND);
+//    ad.send(ArduinoDriver::TEXT_FOUND);
 };
 void ViewController::endOfLine() {
     QPushButton* pb = parentWidget()->findChild<QPushButton*>("pushButton_endOfLine");
     pb->setStyleSheet("color: red;");
-    ad.send(ArduinoDriver::END_OF_LINE);
+//    ad.send(ArduinoDriver::END_OF_LINE);
 };
 void ViewController::sendUp() {ad.send(ArduinoDriver::UP);};
 void ViewController::sendDown() {ad.send(ArduinoDriver::DOWN);};

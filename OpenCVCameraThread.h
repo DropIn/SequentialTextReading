@@ -23,11 +23,12 @@
 using namespace cv;
 
 #include "QTSequentialTextReader.h"
+#include "ArduinoDriver.h"
 
 class OpenCVCameraThread : public QThread, public SequentialTextReader::Handler
 {
     Q_OBJECT
-   
+
     VideoCapture    vc;
     Mat             frame,frame_downscale,frame_rgba;
     int             currentCamera;
@@ -40,6 +41,10 @@ protected:
     void run() {
         if(!vc.isOpened()) {
             vc.open(currentCamera);
+        }
+        if(!str.isInitialized()) {
+        	str.setHandler(this);
+        	str.init();
         }
         
         running = true;
@@ -80,9 +85,10 @@ public:
     QMutex frame_mutex,str_mutex;
 //    QTSequentialTextReader qtstr;
     SequentialTextReader str;
+    ArduinoDriver* ad;
     
     OpenCVCameraThread():QThread(),currentCamera(0),running(false),paused(false) {
-        str.setHandler(this);
+
         qRegisterMetaType<std::string>("std::string");
     }
     
@@ -116,11 +122,13 @@ signals:
     void newFrame();
     
     void newWordFound(std::string str);
-    void endOfLine();
-    void textFound();
-    void escapeUp();
-    void escapeDown();
-    void escapeDistance(int d);
+
+public:
+    void endOfLine() {/*ad->send(ArduinoDriver::END_OF_LINE);*/}
+    void textFound() {/*ad->send(ArduinoDriver::TEXT_FOUND);*/}
+    void escapeUp() {/*ad->send(ArduinoDriver::UP);*/}
+    void escapeDown() {/*ad->send(ArduinoDriver::DOWN);*/}
+    void escapeDistance(int d) {/*ad->send(d);*/}
 
 };
 

@@ -655,7 +655,7 @@ public:
     myHandler(NULL),
     focusArea(Rect(0,0,0,0))
     {
-        TB.init();
+
     }
     
     class Handler {
@@ -692,6 +692,11 @@ public:
     void setFocusSize(int s) { focusArea.height = s; origFocusArea.height = s; }
     const Rect& getFocusArea() { return origFocusArea; }
     
+    void init() {
+    	TB.init();
+    	initialized = true;
+    }
+
     void reset() {
         foundFirstWord = false;
         candidatePoints.clear();

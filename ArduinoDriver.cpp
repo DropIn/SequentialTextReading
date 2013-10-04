@@ -32,5 +32,6 @@ void ArduinoDriver::connectSerial(const std::string& portname) {
 void ArduinoDriver::send(char val) {
     qDebug() << "Sending " << (int)val;
     port.write(&val, 1);
+    port.waitForBytesWritten(5);
 //    port.write(SSTR(val).c_str());
 }

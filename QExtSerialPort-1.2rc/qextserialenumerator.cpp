@@ -160,4 +160,4 @@ void QextSerialEnumerator::setUpNotifications()
         QESP_WARNING("Setup Notification Failed...");
 }
 
-#include "../build/QExtSerialPort-1.2rc/moc_qextserialenumerator.cxx"
+#include "../build_win32/QExtSerialPort-1.2rc/moc_qextserialenumerator.cxx"

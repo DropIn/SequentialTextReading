@@ -8,11 +8,11 @@
 
 #include "FliteTTSBridge.h"
 
-//#ifdef WIN32
-//#include <flite.h>
-//#else
+#ifdef WIN32
+#include <flite.h>
+#else
 #include <flite/flite.h>
-//#endif
+#endif
 
 #include "FliteTTSWorker.h"
 
