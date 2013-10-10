@@ -16,11 +16,11 @@
 #include <QThreadPool>
 #include <QEventLoop>
 
-#ifdef WIN32
-#include <flite.h>
-#else
+//#ifdef WIN32
+//#include <flite.h>
+//#else
 #include <flite/flite.h>
-#endif
+//#endif
 
 class FliteTTSWorker : public QObject, public QRunnable {
     Q_OBJECT

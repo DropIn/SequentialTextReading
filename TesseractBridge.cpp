@@ -22,7 +22,7 @@ tesseract::TessBaseAPI  api;
 string tessdata_dir = "";
 
 void testtess() {
-	cv::Mat img = imread("C:/Users/roys/Downloads/tesseract-ocr-read-only/phototest.png");
+	cv::Mat img = imread("phototest.png");
 	if(img.empty()) { cerr << "noup." << endl; return; }
 	imshow("blah",img);
 	waitKey(1);

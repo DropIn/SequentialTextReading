@@ -18,7 +18,7 @@ class ViewController : public QFrame {
     Q_OBJECT
     
     FliteTTSBridge ftb;
-    ArduinoDriver ad;
+//    ArduinoDriver ad;
 
 public:
     ViewController(QWidget* parent = 0);

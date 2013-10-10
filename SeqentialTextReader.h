@@ -575,6 +575,7 @@ class SequentialTextReader : public AbstractAlgorithm {
         }
         r.height = r_.height + 30;
         r &= Rect(0,0,img.cols,img.rows);
+        r.width = MIN(r.width,img.cols);
         rectangle(img, r, Scalar(0,0,255));
         
         TextConf res = TB.process(orig, img, r);

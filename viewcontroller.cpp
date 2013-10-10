@@ -31,7 +31,6 @@ ViewController::ViewController(QWidget* parent):QFrame(parent) {
 //    connect(&ocvt,SIGNAL(endOfLine()), this, SLOT(endOfLine()));
 //    connect(&ocvt,SIGNAL(escapeDistance(int)), this, SLOT(sendDistance(int)));
 
-    ocvt.ad = &ad;
     ocvt.setDownscale(false);
     ocvt.start();
     
@@ -52,7 +51,7 @@ void ViewController::connectPort() {
     QComboBox* cb = parentWidget()->findChild<QComboBox*>("comboBox_comport");
     if(cb) {
         qDebug() << "Will connect to " << cb->currentText();
-        ad.connectSerial(cb->currentText().toStdString());
+        ocvt.connectSerial(cb->currentText().toStdString());
     }
 }
 
@@ -152,7 +151,7 @@ void ViewController::endOfLine() {
     pb->setStyleSheet("color: red;");
 //    ad.send(ArduinoDriver::END_OF_LINE);
 };
-void ViewController::sendUp() {ad.send(ArduinoDriver::UP);};
-void ViewController::sendDown() {ad.send(ArduinoDriver::DOWN);};
-void ViewController::sendDistance(int val) {ad.send(val);};
-void ViewController::sendClear() {ad.send(ArduinoDriver::CLEAR);};
+void ViewController::sendUp() {ocvt.send(ArduinoDriver::UP);};
+void ViewController::sendDown() {ocvt.send(ArduinoDriver::DOWN);};
+void ViewController::sendDistance(int val) {ocvt.send(val);};
+void ViewController::sendClear() {ocvt.send(ArduinoDriver::CLEAR);};
