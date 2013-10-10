@@ -1,6 +1,6 @@
 //
 //  SeqentialTextReader.h
-//  testopencv
+//  SequentialTextReader
 //
 //  Created by roy_shilkrot on 7/9/13.
 //  Copyright (c) 2013 roy_shilkrot. All rights reserved.
@@ -22,6 +22,7 @@ using namespace cv;
 
 #include "AbstractAlgorithm.h"
 #include "TesseractBridge.h"
+#include "FingertipDetector.h"
 
 #undef ENABLE_PROFILE
 
@@ -160,6 +161,7 @@ class SequentialTextReader : public AbstractAlgorithm {
     vector<pair<Point,STRLeftover> > 	trackedLeftovers;
     Vec2f                           	lastMotion;
     Rect                                focusArea, origFocusArea;
+    FingertipDetector					fd;
     
     static const float                  POINT_TO_LINE_THRESH = 15.0f;
     static const float                  MAX_CONTOUR_AREA = 1500.0f;
