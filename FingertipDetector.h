@@ -219,6 +219,8 @@ public:
         if(last.probability < 0.5)
             bootstrap(img);
         else {
+            //TODO add another modality, like template matching
+            
             last.probability *= 0.9;
             Rect r = last.rr.boundingRect();
             r.x -= 50; r.y -= 20; r.width += 100; r.height -= 50;
