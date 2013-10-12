@@ -286,11 +286,15 @@ class SequentialTextReader : public AbstractAlgorithm {
             lines.back().line = CVToMBLine(l);
         }
     }
-    
+
+    /**
+     * calc 2D histogram to bin the lines
+     * @param lines to bin
+     * @param output image
+     **/
     void linesBinning(vector<STRLine>& lines, Mat& img) {
-        //calc 2D histogram to bin the lines
+        if(lines.size() <= 1) return;
         int N_bins = 12;
-        vector<vector<int> > bins(N_bins,vector<int>(N_bins));
         
         vector<Point2f> lines_mb;
         for (int i=0; i<lines.size(); i++) { lines_mb.push_back(lines[i].line); }
@@ -299,9 +303,16 @@ class SequentialTextReader : public AbstractAlgorithm {
         float intercept_max = (*max_element(lines_mb.begin(), lines_mb.end(), sortpointsbyy<float>)).y;
         float slope_min = (*min_element(lines_mb.begin(), lines_mb.end(), sortpointsbyx<float>)).x;
         float slope_max = (*max_element(lines_mb.begin(), lines_mb.end(), sortpointsbyx<float>)).x;
+
         float intercept_step = (intercept_max - intercept_min)/(float)N_bins;
+        if(intercept_step < 2.0) {
+            intercept_step = 2.0;
+            N_bins = MAX(1,ceil((intercept_max - intercept_min)/intercept_step));
+        }
+
         float slope_step = (slope_max - slope_min)/(float)N_bins;
-        
+
+        vector<vector<int> > bins(N_bins,vector<int>(N_bins));
         float slope_binning_factor = N_bins / (slope_max - slope_min);
         float intercept_binning_factor = N_bins / (intercept_max - intercept_min);
         for (int i=0; i<lines.size(); i++) {
@@ -736,6 +747,12 @@ public:
             focusArea.width = img.cols;
             
             origFocusArea = focusArea;
+        }
+        
+        FingertipResult fr = fd.processImage(img);
+        if(fr.probability > 0.5) {
+            origFocusArea.y = fr.p.y - origFocusArea.height*0.75;
+            focusArea.y = fr.p.y - focusArea.height*0.75;
         }
         
         if (!foundFirstWord) {

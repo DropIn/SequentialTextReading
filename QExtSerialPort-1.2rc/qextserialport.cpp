@@ -1008,4 +1008,8 @@ qint64 QextSerialPort::writeData(const char *data, qint64 maxSize)
     return d->writeData_sys(data, maxSize);
 }
 
+#ifdef WIN32
 #include "../build_win32/QExtSerialPort-1.2rc/moc_qextserialport.cxx"
+#else
+#include "../build/QExtSerialPort-1.2rc/moc_qextserialport.cxx"
+#endif

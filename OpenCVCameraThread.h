@@ -42,7 +42,7 @@ public:
 	bool isEmpty() {PROTECT(mtx,bool empty = _queue.isEmpty();) return empty;}
 	void clean() {PROTECT(mtx,_queue.clear();)}
 	void push(const T& t) {PROTECT(mtx,_queue.enqueue(t);)}
-	void uniquePush(const T& t) {PROTECT(mtx,if(_queue.head()!=t)_queue.enqueue(t);)}
+	void uniquePush(const T& t) {PROTECT(mtx,if(_queue.isEmpty()||_queue.head()!=t)_queue.enqueue(t);)}
 	T pull() {PROTECT(mtx,T i = _queue.dequeue();) return i;}
 private:
 	QQueue<T> _queue;

@@ -10,11 +10,15 @@ public:
 
 int main_STR(int argc, char** argv);
 void testtess();
+void testFingerDetector();
 
 int main(int argc, char** argv)
 {
 //    testtess();
+//    testFingerDetector();
 //    return 1;
+    
+    
     
 	// Read command lines arguments.
 	QApplication application(argc,argv);
