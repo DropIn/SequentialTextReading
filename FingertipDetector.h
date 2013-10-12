@@ -153,8 +153,6 @@ public:
      * @param image to work on
      **/
 	void bootstrap(Mat& img) {
-        last.probability = 0;
-        
         Mat edges;
         Canny(img, edges, 100, 100);
         vector<vector<Point> > contours;
@@ -194,17 +192,17 @@ public:
 //                drawOpenCurve(img, segs[k], Scalar::all(255), 1);
                 
                 RotatedRect box = fitEllipse(segs[k]);
-                Point2f vtx[4]; box.points(vtx);
                 
                 float r = box.size.width/box.size.height;
                 if(fabsf(r-1.0) > 0.23) continue;
                 int a = box.boundingRect().area();
                 if(a < 25000 || a > 40000) continue;
                 
+                Point2f vtx[4]; box.points(vtx);
                 putText(img, SSTR(r)/* + "," + SSTR(a)*/, vtx[0], CV_FONT_NORMAL, 0.5, Scalar::all(255));
                 ellipse(img, box, Scalar(255), 1);
-                for( int j = 0; j < 4; j++ )
-                    line(img, vtx[j], vtx[(j+1)%4], Scalar(0,255,0), 1);
+//                for( int j = 0; j < 4; j++ )
+//                    line(img, vtx[j], vtx[(j+1)%4], Scalar(0,255,0), 1);
                 
                 candidates.push_back(box);
                 last.p = *min_element(segs[k].begin(), segs[k].end(), sortpointsbyy<int>);
@@ -221,13 +219,20 @@ public:
         if(last.probability < 0.5)
             bootstrap(img);
         else {
+            last.probability *= 0.9;
             Rect r = last.rr.boundingRect();
             r.x -= 50; r.y -= 20; r.width += 100; r.height -= 50;
             r = r & Rect(0,0,img.cols,img.rows);
+            
+            if(r.width < 30 || r.height < 30) { last.probability = 0; return last; }
+            
             Mat tmp = img(r);
             bootstrap(tmp);
-            last.p += Point2f(r.x,r.y);
-            last.rr.center += Point2f(r.x,r.y);
+            
+            if(last.probability == 1.0) {
+                last.p += Point2f(r.x,r.y);
+                last.rr.center += Point2f(r.x,r.y);
+            }
             rectangle(img, r, Scalar(0,0,255));
         }
         
