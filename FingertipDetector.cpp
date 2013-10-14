@@ -202,7 +202,7 @@ void testFingerDetector() {
         
         frame.copyTo(img);
         
-        fd.processImage(img);
+        CV_PROFILE(fd.processImage(img);)
         
         imshow("img",img);
         
@@ -215,7 +215,7 @@ void testFingerDetector() {
         //        stringstream ss; ss <<"/Users/roy_shilkrot/Desktop/output/img"<<i<<".jpg";
         //        imwrite(ss.str(), img);
         
-        int c = waitKey();
+        int c = waitKey(10);
         if(c==27) break;
     }
     //    writer.close();

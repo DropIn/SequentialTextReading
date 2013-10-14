@@ -24,19 +24,43 @@ static int mgl_id = 0;
 #endif
 
 template<typename T>
-void ShowMathGLData(const std::vector<T>& values, const int* cutoffLine = NULL, const char* name = NULL) {
+void ShowMathGLData(const std::vector<T>& values, const int* cutoffLine = NULL, const char* name = NULL, bool showAsHist = false) {
 #ifdef HAVE_MATHGL
     mglGraph mgl_gr;
     mglData mgl_x;
     mgl_x.Set(&(values[0]),values.size());
-    //    mglData mgl_h = mgl_gr.Hist(mgl_x);
     T maxv = *(std::max_element(values.begin(), values.end()));
     T minv = *(std::min_element(values.begin(), values.end()));
-    mgl_gr.SetRange('y', minv, maxv);
-    mgl_gr.SetRange('x', 0, values.size());
-    mgl_gr.Box();
-    mgl_gr.Axis();
-    mgl_gr.Bars(mgl_x);
+
+    if(values.size()<=1) showAsHist = false;
+    
+    if(showAsHist) {
+        mglData t(mgl_x.GetNx()); t.Put(1);
+//        std::copy(t.a,t.a+t.GetNx(),std::ostream_iterator<mreal>(std::cout,","));
+//        std::cout<<"\n";
+        mgl_x.Norm(-1,1);
+        mglData mgl_h = mgl_gr.Hist(mgl_x,t);
+//        mglData mgl_h = mgl_x.Hist(10);
+        mgl_h.Norm(0,1);
+        
+//        std::copy(mgl_h.a,mgl_h.a+mgl_h.GetNx(),std::ostream_iterator<mreal>(std::cout,","));
+//        std::cout<<"\n";
+        
+//        mgl_gr.SetRange('y', 0, mgl_h.Maximal());
+//        mgl_gr.SetRange('x', 0.7, 1.3);
+        mgl_gr.SetRanges(minv, maxv, 0, 1);
+        mgl_gr.Box();
+        mgl_gr.Axis();
+
+        mgl_gr.Bars(mgl_h);
+    } else {
+        mgl_gr.SetRange('y', minv, maxv);
+        mgl_gr.SetRange('x', 0, values.size());
+        mgl_gr.Box();
+        mgl_gr.Axis();
+        mgl_gr.Bars(mgl_x);
+    }
+    
     if(cutoffLine != NULL)
         mgl_gr.Line(mglPoint(*cutoffLine,0), mglPoint(*cutoffLine,1));
     

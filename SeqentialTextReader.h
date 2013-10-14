@@ -335,7 +335,7 @@ class SequentialTextReader : public AbstractAlgorithm {
     
     void getCandidatePoints(Mat& img, Mat& adaptive) {
         vector<vector<Point> > contours;
-        findContours(adaptive, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
+        findContours(adaptive(focusArea & Rect(0,0,adaptive.cols,adaptive.rows)), contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
         for (int c=0; c<contours.size(); c++) {
             float ca = (float)contourArea(contours[c]);
             //            cout << ca << endl;
@@ -346,6 +346,9 @@ class SequentialTextReader : public AbstractAlgorithm {
             vector<Point> contour = contours[c];
 //            std::sort(contour.begin(), contour.end(), sortpointsbyy<int>);
             Point2f bottomp = *std::max_element(contour.begin(), contour.end(), sortpointsbyy<int>);
+            bottomp += Point2f(focusArea.x,focusArea.y);
+            
+            Mat(contours[c]) += Scalar(focusArea.x,focusArea.y);
             
 //            Scalar mn = mean(contours[c]);
 //            Point2f midp((float)mn[0],(float)mn[1]);

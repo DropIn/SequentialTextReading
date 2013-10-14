@@ -14,6 +14,21 @@
 #include "AbstractAlgorithm.h"
 #include "MathGLTools.h"
 
+#ifndef CV_PROFILE
+#define CV_PROFILE(code)	\
+{\
+std::cout << #code << " ";\
+double __time_in_ticks = (double)cv::getTickCount();\
+{ code }\
+std::cout << "DONE " << ((double)cv::getTickCount() - __time_in_ticks)/cv::getTickFrequency() << "s" << std::endl;\
+}
+#endif
+
+#ifdef CV_PROFILE
+#define CV_PROFILE(code) code
+#endif
+
+
 #define TwoPi 6.28318530718
 
 #pragma mark Curves Utilities
@@ -127,6 +142,15 @@ void GetCurveSegments(const vector<Point_<T> >& curve, const vector<int>& intere
 	}
 }
 
+template<typename T>
+float CurveLength(const vector<Point_<T> >& curve) {
+    float sum = 0.0f;
+    for (int i=0; i<curve.size()-1; i++) {
+        sum += norm(curve[i]-curve[i+1]);
+    }
+    return sum;
+}
+
 
 #pragma mark Finger Detector
 
@@ -148,33 +172,34 @@ public:
         //search around last, using latest appearence
     }
     
+    vector<float> ratios;
+    vector<float> areas;
+    
     /**
      * Find fingertip candidate without prior knowledge of location
      * @param image to work on
      **/
 	void bootstrap(Mat& img) {
         Mat edges;
-        Canny(img, edges, 100, 100);
+        CV_PROFILE(Canny(img, edges, 100, 100);)
         vector<vector<Point> > contours;
-        findContours(edges, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
-        vector<vector<Point> > contours_long;
-        for (int i=0; i<contours.size(); i++) {
-            if (contours[i].size()>150) {
-                contours_long.push_back(contours[i]);
-            }
-        }
-        contours = contours_long;
-        
+        CV_PROFILE(findContours(edges, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);)
+
         vector<RotatedRect> candidates;
 
         for (int i=0; i<contours.size(); i++) {
-            vector<double> kappa; vector<Point> smooth;
-            ComputeCurveCSS(contours[i], kappa, smooth, 11.0);
-            //            ShowMathGLData(kappa);
+            if (CurveLength(contours[i]) < 100) continue;
             
-            //            Mat tmp; img.copyTo(tmp);
-            //            drawOpenCurve(tmp, contours[i], Scalar(255), 1);
-            //            drawOpenCurve(tmp, smooth, Scalar(0,255), 1);
+            vector<double> kappa; vector<Point> smooth;
+
+//            CV_PROFILE(approxPolyDP(contours[i], contours[i], 0.5, false);)
+            CV_PROFILE(ComputeCurveCSS(contours[i], kappa, smooth, 3.0);)
+            //            ShowMathGLData(kappa);
+            contours[i] = smooth;
+            
+//            Mat tmp; img.copyTo(tmp);
+//            drawOpenCurve(tmp, contours[i], Scalar(255), 1);
+//            drawOpenCurve(tmp, smooth, Scalar(0,255), 1);
             
             vector<int> ips = FindCSSInterestPoints(kappa);
 //            for (int k=0; k<ips.size(); k++) {
@@ -187,20 +212,30 @@ public:
                 segs.push_back(contours[i]); //just put whole curve
             
             for (int k=0; k<segs.size(); k++) {
-                if(segs[k].size() < 30) continue;
-                
+                if(segs[k].size() < 5) continue;
+                if(CurveLength(segs[k]) < 100) continue;
+                                
 //                drawOpenCurve(img, segs[k], Scalar::all(255), 1);
                 
                 RotatedRect box = fitEllipse(segs[k]);
-                
+//                ellipse(img, box, Scalar(0,255), 1);
+
                 float r = box.size.width/box.size.height;
-                if(fabsf(r-1.0) > 0.23) continue;
                 int a = box.boundingRect().area();
-                if(a < 25000 || a > 40000) continue;
-                
+
                 Point2f vtx[4]; box.points(vtx);
-                putText(img, SSTR(r)/* + "," + SSTR(a)*/, vtx[0], CV_FONT_NORMAL, 0.5, Scalar::all(255));
-                ellipse(img, box, Scalar(255), 1);
+//                putText(img, SSTR(r), vtx[0], CV_FONT_NORMAL, 0.5, Scalar::all(255));
+//                putText(img, SSTR(a), vtx[0]+Point2f(0,10), CV_FONT_NORMAL, 0.5, Scalar::all(255));
+                
+                if(fabsf(r-0.81) > 0.15) continue;
+                if(fabsf(a - 26000) > 5000) continue;
+                
+//                ratios.push_back(r);
+//                areas.push_back(a);
+//                ShowMathGLData(ratios,NULL,"ratios",true);
+//                ShowMathGLData(areas,NULL,"areas",true);
+                
+//                ellipse(img, box, Scalar(255), 1);
 //                for( int j = 0; j < 4; j++ )
 //                    line(img, vtx[j], vtx[(j+1)%4], Scalar(0,255,0), 1);
                 
@@ -219,11 +254,11 @@ public:
         if(last.probability < 0.5)
             bootstrap(img);
         else {
-            //TODO add another modality, like template matching
+            //TODO add another modality, like template matching, curve tracking, histogram based
             
             last.probability *= 0.9;
             Rect r = last.rr.boundingRect();
-            r.x -= 50; r.y -= 20; r.width += 100; r.height -= 50;
+            r.x -= 25; r.y -= 15; r.width += 50; r.height -= 40;
             r = r & Rect(0,0,img.cols,img.rows);
             
             if(r.width < 30 || r.height < 30) { last.probability = 0; return last; }
@@ -235,9 +270,10 @@ public:
                 last.p += Point2f(r.x,r.y);
                 last.rr.center += Point2f(r.x,r.y);
             }
-            rectangle(img, r, Scalar(0,0,255));
+//            rectangle(img, r, Scalar(0,0,255));
+//            putText(img, SSTR(last.probability), r.tl()-Point(0,15), CV_FONT_NORMAL, 1.0, Scalar::all(255));
         }
-        
+        ellipse(img, last.rr, Scalar(255), 1);
         return last;
     }
 
