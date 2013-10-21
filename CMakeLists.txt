@@ -93,7 +93,7 @@ include_directories(${TESSERACT_INCLUDE})
 # ENDIF()
 # include_directories(${FFMPEG_INCLUDE_DIRS})
 
-
+############# Find MathGL #############
 FIND_LIBRARY(MathGL_LIB mgl)
 FIND_PATH(MathGL_INCLUDE "mgl2/mgl.h")
 if(MathGL_LIB)
@@ -104,7 +104,9 @@ else()
 	set(MathGL_INCLUDE "")
 	message(STATUS "not using MathGL")
 endif()
+#######################################
 
+############ Find FLITE TTS ############
 SET(Flite_DIR_HINT "" CACHE PATH "Flite lookup dir")
 FIND_LIBRARY(Flite_LIB flite PATHS ${Flite_DIR_HINT} "${Flite_DIR_HINT}/lib")
 FIND_LIBRARY(Flite_cmu_us_kal_LIB flite_cmu_us_kal PATHS ${Flite_DIR_HINT} "${Flite_DIR_HINT}/lib")
@@ -113,6 +115,8 @@ FIND_LIBRARY(Flite_cmulex_LIB flite_cmulex PATHS ${Flite_DIR_HINT} "${Flite_DIR_
 SET(Flite_LIBS ${Flite_cmu_us_kal_LIB} ${Flite_usenglish_LIB} ${Flite_cmulex_LIB} ${Flite_LIB})
 FIND_PATH(Flite_INCLUDE "flite/flite.h" PATHS ${Flite_DIR_HINT} "${Flite_DIR_HINT}/include" "${Flite_DIR_HINT}/../../../include")
 include_directories(${Flite_INCLUDE})
+########################################
+
 
 add_executable(TextReading 
 	${DAD_SOURCES} 
