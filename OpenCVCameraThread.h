@@ -64,6 +64,7 @@ class OpenCVCameraThread : public QThread, public SequentialTextReader::Handler
     QAsyncQueue<char> arduinoCommandQueue;
     bool 			arduinoConnect;
     string			arduinoPort;
+    QMutex          vc_mtx;
     
 protected:
     void run() {
@@ -78,8 +79,9 @@ protected:
         running = true;
         while (running) {
             if(vc.isOpened()) {
-                if(!paused)
-                    vc >> frame;
+                if(!paused) {
+                    PROTECT(vc_mtx,vc >> frame;)
+                }
                 
                 if(!frame.empty()) {
                     frame_mutex.lock();

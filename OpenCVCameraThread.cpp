@@ -11,22 +11,20 @@
 void OpenCVCameraThread::cameraSelect(int i) {
 	if(i == currentCamera) return;
 
-	if(vc.isOpened()) {
-		vc.release();
-	}
+    PROTECT(vc_mtx, if(vc.isOpened()) { vc.release(); } )
 	currentCamera = i;
-	vc.open(currentCamera);
+	PROTECT(vc_mtx, vc.open(currentCamera); )
 }
 void OpenCVCameraThread::videoFile(const std::string& file) {
-	if(vc.isOpened()) {
-		vc.release();
-	}
-	currentCamera = -1;
+    PROTECT(vc_mtx, if(vc.isOpened()) { vc.release(); } )
+	
+    currentCamera = -1;
 	qDebug("Open video file %s",file.c_str());
-	vc.open(file);
-	if(vc.isOpened())
-		vc >> frame;
-	else
+    
+	PROTECT(vc_mtx,vc.open(file);)
+	if(vc.isOpened()) {
+		PROTECT(vc_mtx,vc >> frame;)
+	} else
 		qDebug("Can't open file");
 }
 

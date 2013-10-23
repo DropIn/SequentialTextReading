@@ -171,6 +171,80 @@ public:
 	void detect() {
         //search around last, using latest appearence
     }
+
+    /**
+     * analyze the bottom of the image to find a possible area where the finger is
+     * @param img Image to work on
+     * @return the cutoff area
+     **/
+    Rect bottomLineAnalysis(Mat& img) {
+        // Look for a clear horizontal cutoff point where the finger enters the image
+        
+        int bandsize = img.rows / 5;
+        Mat btmLine; reduce(img(Rect(0,img.rows-bandsize,img.cols,bandsize)), btmLine, 0, CV_REDUCE_AVG);
+//        repeat(btmLine, bandsize, 1, img(Rect(0,img.rows-bandsize,img.cols,bandsize)));
+        
+//        Mat btmLine; img.row(img.rows-1).copyTo(btmLine);
+        Mat tmp; btmLine.convertTo(tmp, CV_32FC3, 1.0/255.0);
+        Mat samples = Mat(tmp.t()).reshape(1);
+        Mat lables_;
+        kmeans(samples, 2, lables_, TermCriteria(TermCriteria::MAX_ITER+TermCriteria::EPS, 50, 0.1), 1, KMEANS_RANDOM_CENTERS);
+        Mat_<uchar> lables; lables_.convertTo(lables, CV_8UC1);
+//        imshow("first line",lables*255.0/3.0);
+//        cout << lables;
+        
+        int window = img.cols/4; window += (window % 2) == 0 ? 1 : 0;
+        int twowindow = window * 2;
+        medianBlur(lables, lables, window);
+//        imshow("first line median",lables*255.0/3.0);
+//        cout << lables;
+        
+        Rect possibleArea;
+        
+        for (int i=0; i<lables.rows; i++) {
+//            img.at<Vec3b>(img.rows-1,i) =   (lables(i) == 0) ? Vec3b(255,0,0) :
+//                                            (lables(i) == 1) ? Vec3b(0,255,0) :
+//                                            Vec3b(0,0,255);
+            
+            if(i>50 && i<img.cols-50) {
+                if(lables(i) != lables(i-1)) {
+//                    line(img, Point(i-1,0), Point(i-1,img.rows), Scalar(255));
+//                    line(img, Point(i+twowindow+1,0), Point(i+twowindow+1,img.rows), Scalar(0,255));
+                    possibleArea = Rect(i, 0, twowindow,img.rows) & Rect(0,0,img.cols,img.rows);
+                    break;
+                }
+            }
+        }
+        if(possibleArea.x <= 0 || possibleArea.width <=0 || possibleArea.height <= 0)
+            return Rect(0,0,0,0);
+        
+        
+        // Now look for a vertical cutoff point
+        
+        bandsize = img.cols/6;
+        int midx = (possibleArea.x+possibleArea.x+possibleArea.width)/2;
+//        line(img,Point(midx,0),Point(midx,img.rows),Scalar(0,255));
+        reduce(img(Rect(midx-bandsize/2,0,bandsize,img.rows)), btmLine, 1, CV_REDUCE_AVG);
+        btmLine.convertTo(tmp, CV_32FC3, 1.0/255.0);
+        samples = tmp.reshape(1);
+        kmeans(samples, 2, lables_, TermCriteria(TermCriteria::MAX_ITER+TermCriteria::EPS, 50, 0.1), 1, KMEANS_RANDOM_CENTERS);
+        lables_.convertTo(lables, CV_8UC1);
+        medianBlur(lables, lables, window);
+        
+        for (int i=0; i<lables.rows; i++) {
+            if(i>50 && i<img.rows-50) {
+                if(lables(i) != lables(i-1)) {
+//                    line(img, Point(0,i-window/2-1), Point(img.cols,i-window/2-1), Scalar(255));
+//                    line(img, Point(0,i+window/2+1), Point(img.cols,i+window/2+1), Scalar(0,255));
+                    possibleArea &= Rect(0, i-window/2, img.cols, window);
+                    break;
+                }
+            }
+        }
+        
+//        waitKey();
+        return possibleArea & Rect(0,0,img.cols,img.rows);
+    }
     
     vector<float> ratios;
     vector<float> areas;
@@ -180,6 +254,7 @@ public:
      * @param image to work on
      **/
 	void bootstrap(Mat& img) {
+        
         Mat edges;
         CV_PROFILE(Canny(img, edges, 100, 100);)
         vector<vector<Point> > contours;
@@ -188,7 +263,8 @@ public:
         vector<RotatedRect> candidates;
 
         for (int i=0; i<contours.size(); i++) {
-            if (CurveLength(contours[i]) < 100) continue;
+//            drawOpenCurve(img, contours[i], Scalar::all(255), 1);
+            if (contours[i].size() < 15 || CurveLength(contours[i]) < 100) continue;
             
             vector<double> kappa; vector<Point> smooth;
 
@@ -199,7 +275,7 @@ public:
             
 //            Mat tmp; img.copyTo(tmp);
 //            drawOpenCurve(tmp, contours[i], Scalar(255), 1);
-//            drawOpenCurve(tmp, smooth, Scalar(0,255), 1);
+//            drawOpenCurve(img, smooth, Scalar(0,255), 1);
             
             vector<int> ips = FindCSSInterestPoints(kappa);
 //            for (int k=0; k<ips.size(); k++) {
@@ -251,9 +327,28 @@ public:
     
     
     FingertipResult processImage(Mat& img) {
-        if(last.probability < 0.5)
-            bootstrap(img);
-        else {
+//        Mat img; resize(img_, img, Size(),0.5,0.5); //work on a half-res
+        if(last.probability < 0.5) {
+            Rect cutoff = bottomLineAnalysis(img);
+            
+            Mat tmp;
+            if(cutoff.x > 0 && cutoff.width > 0 && cutoff.height > 0)
+                tmp = img(cutoff);
+            else
+                tmp = img;
+            
+            bootstrap(tmp);
+            
+            if(cutoff.x > 0 && cutoff.width > 0 && cutoff.height > 0) {
+                if(last.probability == 1.0) {
+                    last.p += Point2f(cutoff.x,cutoff.y);
+                    last.rr.center += Point2f(cutoff.x,cutoff.y);
+                } else {
+                    last.probability = 0.75;
+                    last.p = (cutoff.tl()+cutoff.br())*0.5;
+                }
+            }
+        } else {
             //TODO add another modality, like template matching, curve tracking, histogram based
             
             last.probability *= 0.9;
@@ -273,8 +368,24 @@ public:
 //            rectangle(img, r, Scalar(0,0,255));
 //            putText(img, SSTR(last.probability), r.tl()-Point(0,15), CV_FONT_NORMAL, 1.0, Scalar::all(255));
         }
-        ellipse(img, last.rr, Scalar(255), 1);
-        return last;
+        
+        FingertipResult fr = last;
+         /*
+        resize(img, img_, Size(), 2.0, 2.0);
+        
+        RotatedRect rr_ = last.rr;
+        rr_.center.x *= 2.0;
+        rr_.center.y *= 2.0;
+        rr_.size.width *= 2.0;
+        rr_.size.height *= 2.0;
+        
+        fr.p = Point2f(last.p.x*2.0,last.p.y*2.0);
+        fr.rr = rr_;
+        fr.probability = last.probability;
+          */
+
+        ellipse(img, fr.rr, Scalar(255), 1);
+        return fr;
     }
 
 private:
