@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>763</width>
-    <height>559</height>
+    <height>583</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -463,6 +463,13 @@
           </item>
          </layout>
         </item>
+        <item>
+         <widget class="QPushButton" name="pushButton_traingFingertip">
+          <property name="text">
+           <string>Train Fingertip</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
      </item>
@@ -507,6 +514,7 @@
     <slot>setFocusLocation(int)</slot>
     <slot>setFocusSize(int)</slot>
     <slot>togglePause(bool)</slot>
+    <slot>trainFingertip()</slot>
    </slots>
   </customwidget>
  </customwidgets>
@@ -781,6 +789,22 @@
     <hint type="destinationlabel">
      <x>231</x>
      <y>279</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_traingFingertip</sender>
+   <signal>clicked()</signal>
+   <receiver>frame_viewController</receiver>
+   <slot>trainFingertip()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>598</x>
+     <y>534</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>224</x>
+     <y>291</y>
     </hint>
    </hints>
   </connection>

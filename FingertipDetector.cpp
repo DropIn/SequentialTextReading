@@ -184,7 +184,7 @@ void testFingerDetector() {
     FingertipDetector fd;
     
     VideoCapture vc;
-    vc.open("/Users/roy_shilkrot/Documents/src/TextReading/build/Debug/woz2.mp4");
+    vc.open("/Users/roy_shilkrot/Documents/src/TextReading/build/Debug/woz35.mp4");
     if(!vc.isOpened()) exit(0);
     
     //    ofxFFMPEGVideoWriter writer;

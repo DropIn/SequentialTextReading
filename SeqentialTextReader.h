@@ -161,7 +161,9 @@ class SequentialTextReader : public AbstractAlgorithm {
     vector<pair<Point,STRLeftover> > 	trackedLeftovers;
     Vec2f                           	lastMotion;
     Rect                                focusArea, origFocusArea;
+public:
     FingertipDetector					fd;
+private:
     
     static const float                  POINT_TO_LINE_THRESH = 15.0f;
     static const float                  MAX_CONTOUR_AREA = 1500.0f;
@@ -751,14 +753,16 @@ public:
             
             origFocusArea = focusArea;
         }
-        
-        FingertipResult fr = fd.processImage(img);
-        if(fr.probability > 0.5) {
-            origFocusArea.y = fr.p.y - origFocusArea.height*0.75;
-            focusArea.y = fr.p.y - focusArea.height*0.75;
-        }
-        
+
         if (!foundFirstWord) {
+
+            FingertipResult fr = fd.processImage(img);
+            if(fr.probability > 0.5 && fr.p.y > 0 && fr.p.y < img.cols) {
+                origFocusArea.y = fr.p.y - origFocusArea.height*0.75;
+                focusArea.y = fr.p.y - focusArea.height*0.75;
+            }
+
+
             getCandidatePoints(img, adaptive);
             
             vector<STRLine> lines;
@@ -844,7 +848,7 @@ public:
             int origFocusAreaMidpY = origFocusArea.y + origFocusArea.height/2;
             
             if((trackedWords.size() == 0 && trackedLeftovers.size() == 0) ||
-               fabsf(trackedLineMidpY-origFocusAreaMidpY) > origFocusArea.height)
+               fabsf(trackedLineMidpY-origFocusAreaMidpY) > origFocusArea.height*0.75)
             {
                 //tracking failed, go back to seek mode...
                 endOfLine();

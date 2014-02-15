@@ -55,9 +55,33 @@ void FliteTTSWorker::run() {
 //    "\n\ttype" << w->type <<
 //    "\n";
     
-    m_format.setFrequency(cst_wave_sample_rate(w));
-    m_format.setChannels(cst_wave_num_channels(w));
-    m_format.setSampleSize(sizeof(typeof(*(w->samples))) * 8); //bits per sample
+    int freq = cst_wave_sample_rate(w);
+    int numchannels = cst_wave_num_channels(w);
+    int samplesize_bytes = sizeof(typeof(*(w->samples)));
+    int samplesize = samplesize_bytes * 8;
+    short* buf = (short*)(cst_wave_samples(w));
+    int numsamples = cst_wave_num_samples(w);
+
+    if(cst_wave_sample_rate(w)==16000) {
+    	short* newwave = new short[numsamples/2+1];
+    	int ii = 0;
+    	int step = 2*samplesize_bytes;
+    	for (int i = 0; i < numsamples; i+=2) {
+    		if(i>=numsamples) break;
+			newwave[ii] = buf[i];
+			ii++;
+		}
+    	memset(buf,0,numsamples*samplesize_bytes);
+    	memcpy(buf,newwave,numsamples * samplesize_bytes);
+    	delete newwave;
+
+    	numsamples = cst_wave_num_samples(w)/2;
+    	freq = 8000;
+    }
+
+    m_format.setFrequency(freq);
+    m_format.setChannels(numchannels);
+    m_format.setSampleSize(samplesize); //bits per sample
     m_format.setCodec("audio/pcm");
     m_format.setByteOrder(QAudioFormat::LittleEndian);
     m_format.setSampleType(QAudioFormat::SignedInt);
@@ -71,9 +95,9 @@ void FliteTTSWorker::run() {
     QAudioOutput m_audioOutput(m_format, 0);
 //    connect(m_audioOutput,SIGNAL(stateChanged(QAudio::State)),this,SLOT(finishedPlaying(QAudio::State)));
     
-    int sizeinbytes = cst_wave_num_samples(w) * sizeof(typeof(*(w->samples)));
+    int sizeinbytes = numsamples * samplesize_bytes;
     b.open(QIODevice::ReadWrite);
-    b.write((char*)(cst_wave_samples(w)), sizeinbytes);
+    b.write((char*)buf, sizeinbytes);
     b.seek(0);
     m_audioOutput.start(&b);
     //hold until sound is done

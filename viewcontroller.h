@@ -48,6 +48,7 @@ public slots:
     void sendDown();
     void sendDistance(int val);
     void sendClear();
+    void trainFingertip();
 };
 
 #endif

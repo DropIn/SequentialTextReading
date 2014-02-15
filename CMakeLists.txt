@@ -110,9 +110,21 @@ endif()
 SET(Flite_DIR_HINT "" CACHE PATH "Flite lookup dir")
 FIND_LIBRARY(Flite_LIB flite PATHS ${Flite_DIR_HINT} "${Flite_DIR_HINT}/lib")
 FIND_LIBRARY(Flite_cmu_us_kal_LIB flite_cmu_us_kal PATHS ${Flite_DIR_HINT} "${Flite_DIR_HINT}/lib")
+FIND_LIBRARY(Flite_cmu_us_kal16_LIB flite_cmu_us_kal16 PATHS ${Flite_DIR_HINT} "${Flite_DIR_HINT}/lib")
+FIND_LIBRARY(Flite_cmu_us_rms_LIB flite_cmu_us_rms PATHS ${Flite_DIR_HINT} "${Flite_DIR_HINT}/lib")
+FIND_LIBRARY(Flite_cmu_us_awb_LIB flite_cmu_us_awb PATHS ${Flite_DIR_HINT} "${Flite_DIR_HINT}/lib")
+FIND_LIBRARY(Flite_cmu_us_slt_LIB flite_cmu_us_slt PATHS ${Flite_DIR_HINT} "${Flite_DIR_HINT}/lib")
 FIND_LIBRARY(Flite_usenglish_LIB flite_usenglish PATHS ${Flite_DIR_HINT} "${Flite_DIR_HINT}/lib")
 FIND_LIBRARY(Flite_cmulex_LIB flite_cmulex PATHS ${Flite_DIR_HINT} "${Flite_DIR_HINT}/lib")
-SET(Flite_LIBS ${Flite_cmu_us_kal_LIB} ${Flite_usenglish_LIB} ${Flite_cmulex_LIB} ${Flite_LIB})
+SET(Flite_LIBS 
+	${Flite_cmu_us_kal_LIB} 
+	${Flite_cmu_us_kal16_LIB} 
+	${Flite_cmu_us_rms_LIB}
+	${Flite_cmu_us_awb_LIB}
+	${Flite_cmu_us_slt_LIB}
+	${Flite_usenglish_LIB} 
+	${Flite_cmulex_LIB} 
+	${Flite_LIB})
 FIND_PATH(Flite_INCLUDE "flite/flite.h" PATHS ${Flite_DIR_HINT} "${Flite_DIR_HINT}/include" "${Flite_DIR_HINT}/../../../include")
 include_directories(${Flite_INCLUDE})
 ########################################

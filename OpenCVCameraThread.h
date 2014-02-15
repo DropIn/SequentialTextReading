@@ -111,7 +111,7 @@ protected:
             	arduinoConnect = false;
             }
             while(!arduinoCommandQueue.isEmpty()) {
-            	ad.send(arduinoCommandQueue.pull());
+            	ad.sendByte(arduinoCommandQueue.pull());
             }
             msleep(15);
 //            el.processEvents(QEventLoop::AllEvents, 30);

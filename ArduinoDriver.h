@@ -12,16 +12,20 @@
 #include <iostream>
 #include <QObject>
 #include <QDebug>
+#include <QThread>
 
 #include "QExtSerialPort-1.2rc/qextserialport.h"
 
-class ArduinoDriver : public QObject {
+
+class ArduinoDriver : public QThread {
     Q_OBJECT
     
-    QextSerialPort port;
+    QextSerialPort* thread_port;
+    std::string m_portname;
+
+    bool arduinoSetup;
     
 public:
-    ~ArduinoDriver();
     static const char TEXT_FOUND =  58;
     static const char UP =          51;
     static const char DOWN =        52;
@@ -29,13 +33,20 @@ public:
     static const char SYNC =        22;
     static const char CLEAR =       9;
 
-    void connectSerial(const std::string&);
-    void send(char);
-    
-    public slots:
-    void onDataAvailable() {
-//        qDebug() << "Port received " << port.readAll();
+
+    ArduinoDriver() {
+    	arduinoSetup = false;
     }
+    ~ArduinoDriver();
+
+    void run();
+
+    void connectSerial(const std::string&);
+    bool isSetup() { return arduinoSetup; }
+public slots:
+	void sendByte(uchar b);
+    void onDataAvailable();
 };
+
 
 #endif /* defined(__TextReading__ArduinoDriver__) */

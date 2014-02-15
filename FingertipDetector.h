@@ -11,6 +11,8 @@
 
 #include "std.h"
 
+#include <deque>
+
 #include "AbstractAlgorithm.h"
 #include "MathGLTools.h"
 
@@ -164,9 +166,14 @@ class FingertipDetector : public AbstractAlgorithm {
 public:
     FingertipDetector() {
         last.probability = 0;
+
+        gaussianKernel = cv::getGaussianKernel(5, 2.0, CV_32F);
+		std::cout << gaussianKernel << std::endl;
+
+		bTraining = false;
     }
     
-	void train() {}
+	void train() {bTraining = true; trainingSamples.clear();}
     
 	void detect() {
         //search around last, using latest appearence
@@ -177,11 +184,16 @@ public:
      * @param img Image to work on
      * @return the cutoff area
      **/
-    Rect bottomLineAnalysis(Mat& img) {
+    Rect bottomLineAnalysis(Mat& _img) {
         // Look for a clear horizontal cutoff point where the finger enters the image
+    	Mat img;
+//    	_img.copyTo(img);
+    	GaussianBlur(_img,img,Size(25,25),11.0,11.0);
         
+        int yoffset = 100;
+    	int xoffset = 50;
         int bandsize = img.rows / 5;
-        Mat btmLine; reduce(img(Rect(0,img.rows-bandsize,img.cols,bandsize)), btmLine, 0, CV_REDUCE_AVG);
+        Mat btmLine; reduce(img(Rect(xoffset,img.rows-bandsize-yoffset,img.cols-xoffset*2,bandsize)), btmLine, 0, CV_REDUCE_AVG);
 //        repeat(btmLine, bandsize, 1, img(Rect(0,img.rows-bandsize,img.cols,bandsize)));
         
 //        Mat btmLine; img.row(img.rows-1).copyTo(btmLine);
@@ -202,15 +214,15 @@ public:
         Rect possibleArea;
         
         for (int i=0; i<lables.rows; i++) {
-//            img.at<Vec3b>(img.rows-1,i) =   (lables(i) == 0) ? Vec3b(255,0,0) :
-//                                            (lables(i) == 1) ? Vec3b(0,255,0) :
-//                                            Vec3b(0,0,255);
+            _img.at<Vec3b>(img.rows-1,i+xoffset) =   (lables(i) == 0) ? Vec3b(255,0,0) :
+                                            (lables(i) == 1) ? Vec3b(0,255,0) :
+                                            Vec3b(0,0,255);
             
             if(i>50 && i<img.cols-50) {
                 if(lables(i) != lables(i-1)) {
 //                    line(img, Point(i-1,0), Point(i-1,img.rows), Scalar(255));
 //                    line(img, Point(i+twowindow+1,0), Point(i+twowindow+1,img.rows), Scalar(0,255));
-                    possibleArea = Rect(i, 0, twowindow,img.rows) & Rect(0,0,img.cols,img.rows);
+                    possibleArea = Rect(i+xoffset, 0, twowindow,img.rows) & Rect(0,0,img.cols,img.rows);
                     break;
                 }
             }
@@ -224,7 +236,7 @@ public:
         bandsize = img.cols/6;
         int midx = (possibleArea.x+possibleArea.x+possibleArea.width)/2;
 //        line(img,Point(midx,0),Point(midx,img.rows),Scalar(0,255));
-        reduce(img(Rect(midx-bandsize/2,0,bandsize,img.rows)), btmLine, 1, CV_REDUCE_AVG);
+        reduce(img(Rect(midx-bandsize/2, yoffset, bandsize, img.rows-2*yoffset) & Rect(0,0,img.cols,img.rows)), btmLine, 1, CV_REDUCE_AVG);
         btmLine.convertTo(tmp, CV_32FC3, 1.0/255.0);
         samples = tmp.reshape(1);
         kmeans(samples, 2, lables_, TermCriteria(TermCriteria::MAX_ITER+TermCriteria::EPS, 50, 0.1), 1, KMEANS_RANDOM_CENTERS);
@@ -234,9 +246,12 @@ public:
         for (int i=0; i<lables.rows; i++) {
             if(i>50 && i<img.rows-50) {
                 if(lables(i) != lables(i-1)) {
+                	_img.at<Vec3b>(0,i+yoffset) =   (lables(i) == 0) ? Vec3b(255,0,0) :
+													(lables(i) == 1) ? Vec3b(0,255,0) :
+													Vec3b(0,0,255);
 //                    line(img, Point(0,i-window/2-1), Point(img.cols,i-window/2-1), Scalar(255));
 //                    line(img, Point(0,i+window/2+1), Point(img.cols,i+window/2+1), Scalar(0,255));
-                    possibleArea &= Rect(0, i-window/2, img.cols, window);
+                    possibleArea &= Rect(0, i-window/2 + yoffset, img.cols, window);
                     break;
                 }
             }
@@ -325,12 +340,66 @@ public:
         //TODO bin candidates, select best one
 	}
     
-    
     FingertipResult processImage(Mat& img) {
+    	FingertipResult fr;
+        if(bTraining) {
+
+        static const int median_filter_size = 20;
 //        Mat img; resize(img_, img, Size(),0.5,0.5); //work on a half-res
-        if(last.probability < 0.5) {
+//        if(last.probability < 0.5) {
             Rect cutoff = bottomLineAnalysis(img);
-            
+
+            centers.push_back((cutoff.br()+cutoff.tl())*0.5);
+            if(centers.size()>median_filter_size) centers.pop_front();
+
+//            for (int i = 0; i < centers.size(); ++i) {
+//            	circle(img,centers[i],3,Scalar(0,255,255),1);
+//			}
+            Point medianC = centers.back();
+            if(centers.size() > median_filter_size) {
+            	set<int> cx,cy;
+				for (int i = 0; i < centers.size(); ++i) {
+					cx.insert(centers[i].x); cy.insert(centers[i].y);
+				}
+				vector<int> cxv,cyv;
+				std::copy(cx.begin(),cx.end(),std::back_inserter(cxv));
+				std::copy(cy.begin(),cy.end(),std::back_inserter(cyv));
+				medianC = Point(*(cxv.begin()+(cxv.size()/2)),*(cyv.begin()+(cyv.size()/2)));
+				medians.push_back(medianC);
+				if(medians.size()>median_filter_size/2) {
+					while(medians.size()>median_filter_size/2) medians.pop_front();
+
+					float rezx = 0,rezy = 0;
+					for (int i = 0; i < medians.size(); ++i) {
+						rezx += (float)(medians[i].x) * gaussianKernel(i);
+						rezy += (float)(medians[i].y) * gaussianKernel(i);
+					}
+					medianC.x = rezx;
+					medianC.y = rezy;
+				}
+
+//				circle(img,medianC,3,Scalar(0,255,255),1);
+
+				cutoff.x = medianC.x - 50;
+				cutoff.y = medianC.y;
+				cutoff.width = cutoff.height = 100;
+            }
+
+            if(cutoff.x > 0 && cutoff.width > 0 && cutoff.height > 0) {
+				last.rr = RotatedRect(medianC,cutoff.size(),0.0f);
+				last.p = medianC;
+				last.probability = 1.0;
+
+//				rectangle(img, cutoff, Scalar(0,0,255));
+//	            putText(img, SSTR(last.probability), cutoff.tl()-Point(0,15), CV_FONT_NORMAL, 1.0, Scalar::all(255));
+            } else {
+            	last.probability = 0;
+            }
+
+            fr = last;
+
+
+            /*
             Mat tmp;
             if(cutoff.x > 0 && cutoff.width > 0 && cutoff.height > 0)
                 tmp = img(cutoff);
@@ -348,6 +417,7 @@ public:
                     last.p = (cutoff.tl()+cutoff.br())*0.5;
                 }
             }
+
         } else {
             //TODO add another modality, like template matching, curve tracking, histogram based
             
@@ -368,8 +438,8 @@ public:
 //            rectangle(img, r, Scalar(0,0,255));
 //            putText(img, SSTR(last.probability), r.tl()-Point(0,15), CV_FONT_NORMAL, 1.0, Scalar::all(255));
         }
-        
-        FingertipResult fr = last;
+        */
+
          /*
         resize(img, img_, Size(), 2.0, 2.0);
         
@@ -383,13 +453,65 @@ public:
         fr.rr = rr_;
         fr.probability = last.probability;
           */
+        	trainingSamples.push_back(fr.rr.boundingRect());
+        	if(trainingSamples.size() > 100) {
+        		bTraining = false;
+
+                Rect cutoff_;
+                std::vector<Point> trainingcenters;
+
+                for (int i = 0; i < trainingSamples.size(); ++i) {
+                    trainingcenters.push_back((trainingSamples[i].br()+trainingSamples[i].tl())*0.5);
+    			}
+
+                Point medianC_ = trainingcenters.back();
+    			set<int> cx_,cy_;
+    			for (int i = 0; i < trainingcenters.size(); ++i) {
+    				cx_.insert(trainingcenters[i].x); cy_.insert(trainingcenters[i].y);
+    			}
+    			vector<int> cxv_,cyv_;
+    			std::copy(cx_.begin(),cx_.end(),std::back_inserter(cxv_));
+    			std::copy(cy_.begin(),cy_.end(),std::back_inserter(cyv_));
+    			medianC_ = Point(*(cxv_.begin()+(cxv_.size()/2)),*(cyv_.begin()+(cyv_.size()/2)));
+    //			medians.push_back(medianC);
+    //			if(medians.size()>median_filter_size/2) {
+    //				while(medians.size()>median_filter_size/2) medians.pop_front();
+    //
+    //				float rezx = 0,rezy = 0;
+    //				for (int i = 0; i < medians.size(); ++i) {
+    //					rezx += (float)(medians[i].x) * gaussianKernel(i);
+    //					rezy += (float)(medians[i].y) * gaussianKernel(i);
+    //				}
+    //				medianC.x = rezx;
+    //				medianC.y = rezy;
+    //			}
+
+    //				circle(img,medianC,3,Scalar(0,255,255),1);
+
+    			cutoff_.x = medianC_.x - 50;
+    			cutoff_.y = medianC_.y;
+    			cutoff_.width = cutoff_.height = 100;
+
+    			trainedRR = RotatedRect(medianC_,cutoff_.size(),0.0f);
+        	}
+        } else {
+			last.rr = trainedRR;
+			last.p = trainedRR.center;
+			last.probability = 1.0;
+        }
 
         ellipse(img, fr.rr, Scalar(255), 1);
         return fr;
     }
 
 private:
-    FingertipResult last;
+    FingertipResult 			last;
+    std::deque<Point> 			centers,medians;
+    cv::Mat_<float>				gaussianKernel;
+    bool						bTraining;
+
+    std::vector<cv::Rect> 		trainingSamples;
+    cv::RotatedRect				trainedRR;
 };
 
 

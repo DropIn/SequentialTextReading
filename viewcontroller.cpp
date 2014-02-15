@@ -33,9 +33,9 @@ ViewController::ViewController(QWidget* parent):QFrame(parent) {
 
     ocvt.setDownscale(false);
     ocvt.start();
-    
+
     ftb.init();
-    
+
     
 //    fillPortsInfo();
 }
@@ -144,14 +144,16 @@ void ViewController::newWordFound(std::string s) {
 void ViewController::textFound() {
     QPushButton* pb = parentWidget()->findChild<QPushButton*>("pushButton_textFound");
     pb->setStyleSheet("color: red;");
-//    ad.send(ArduinoDriver::TEXT_FOUND);
+    ocvt.send(ArduinoDriver::TEXT_FOUND);
 };
 void ViewController::endOfLine() {
     QPushButton* pb = parentWidget()->findChild<QPushButton*>("pushButton_endOfLine");
     pb->setStyleSheet("color: red;");
-//    ad.send(ArduinoDriver::END_OF_LINE);
+    ocvt.send(ArduinoDriver::END_OF_LINE);
 };
 void ViewController::sendUp() {ocvt.send(ArduinoDriver::UP);};
 void ViewController::sendDown() {ocvt.send(ArduinoDriver::DOWN);};
 void ViewController::sendDistance(int val) {ocvt.send(val);};
 void ViewController::sendClear() {ocvt.send(ArduinoDriver::CLEAR);};
+
+void ViewController::trainFingertip() { ocvt.str.fd.train(); }
