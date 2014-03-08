@@ -85,6 +85,18 @@ void TesseractBridge::close() {
     api.End();
 }
 
+pair<int,string> TesseractBridge::process(const Mat& img, Mat& out, Rect& r, float angle) {
+//    imshow("tesseract",img(r));
+    Mat tmp; cvtColor(img(r), tmp, CV_BGR2GRAY);
+    adaptiveThreshold(tmp, tmp, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 51, 35);
+//    imshow("eqhist", tmp);
+//    waitKey(1);
+
+//    cvtColor(tmp, out(Rect(0,0,r.width,r.height)), CV_GRAY2BGR);
+
+    return processEx(tmp, r);
+}
+
 pair<int,string> TesseractBridge::process(const Mat& img, Mat& out, Rect& r) {
 //    imshow("tesseract",img(r));
     Mat tmp; cvtColor(img(r), tmp, CV_BGR2GRAY);
@@ -93,6 +105,11 @@ pair<int,string> TesseractBridge::process(const Mat& img, Mat& out, Rect& r) {
 //    waitKey(1);
     
 //    cvtColor(tmp, out(Rect(0,0,r.width,r.height)), CV_GRAY2BGR);
+
+    return processEx(tmp,r);
+}
+
+pair<int,string> TesseractBridge::processEx(const Mat& tmp, Rect& r) {
     api.Clear();
     
     char* cstr = api.TesseractRect(tmp.data, tmp.channels(), tmp.cols*tmp.channels(), 0, 0, tmp.cols, tmp.rows);

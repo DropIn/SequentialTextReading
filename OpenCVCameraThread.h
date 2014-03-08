@@ -141,6 +141,9 @@ signals:
     void newFrame();
     
     void newWordFound(std::string str);
+    void signalEndOfLine();
+    void signalTextFound();
+    void signalEscapeDistance(int d);
 
 public:
     void endOfLine();

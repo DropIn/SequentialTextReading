@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.6)
 project (TextReading) 
 
 find_package(OpenGL REQUIRED)
-find_package(Qt4 REQUIRED QtGui QtOpenGL QtXml QtMultimedia)
+find_package(Qt4 REQUIRED QtGui QtOpenGL QtXml QtMultimedia Phonon)
 find_package(OpenCV REQUIRED core imgproc video highgui)
 # find_package(OpenMP REQUIRED)
 

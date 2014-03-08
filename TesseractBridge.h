@@ -27,7 +27,9 @@ public:
      * @return The first word in the image and it's confidence level. May be <0,""> in case of error.
      **/
     pair<int,string> process(const Mat& orig, Mat& img, Rect& r);
-    
+    pair<int,string> process(const Mat& orig, Mat& img, Rect& r, float angle);
+    pair<int,string> processEx(const Mat& tmp, Rect& r);
+
     void close();
 };
 

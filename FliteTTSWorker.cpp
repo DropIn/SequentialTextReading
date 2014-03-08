@@ -62,6 +62,7 @@ void FliteTTSWorker::run() {
     short* buf = (short*)(cst_wave_samples(w));
     int numsamples = cst_wave_num_samples(w);
 
+    //downsample 16khz to 8khz (take every second sample, no filter)
     if(cst_wave_sample_rate(w)==16000) {
     	short* newwave = new short[numsamples/2+1];
     	int ii = 0;
@@ -86,10 +87,10 @@ void FliteTTSWorker::run() {
     m_format.setByteOrder(QAudioFormat::LittleEndian);
     m_format.setSampleType(QAudioFormat::SignedInt);
     
-    QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
-    if (!info.isFormatSupported(m_format)) {
+
+    if (!info->isFormatSupported(m_format)) {
         std::cerr << "Default format not supported - trying to use nearest";
-        m_format = info.nearestFormat(m_format);
+        m_format = info->nearestFormat(m_format);
     }
     
     QAudioOutput m_audioOutput(m_format, 0);

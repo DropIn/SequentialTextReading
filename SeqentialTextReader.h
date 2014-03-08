@@ -403,7 +403,9 @@ private:
         for (int i=0; i<points.size(); i++) {
             if (points[i].inside(r)) {
                 pair<Point,Mat> p;
-                Rect bb = boundingRect(characters[i]);
+                Rect bb = boundingRect(characters[i]) & Rect(0,0,orig.cols,orig.rows);
+                if(bb.width < 10 || bb.height < 10) continue;
+
                 p.first = bb.tl();
                 orig(bb).copyTo(p.second);
                 w.chars.push_back(p);
@@ -552,19 +554,27 @@ private:
             Rect rr;
             pair<float,Point> p = findPatch(trackedLeftovers[i].first, trackedLeftovers[i].second.patch, orig, rr);
             if(p.first < 0.0315) {
+                //leftover was most probably found
                 trackedLeftovers[i].first = p.second;
                 trackedLeftovers[i].second.times_seen++;
-                addWeighted(orig(Rect(p.second,trackedLeftovers[i].second.patch.size())), 0.5, trackedLeftovers[i].second.patch, 0.5, 0.0, trackedLeftovers[i].second.patch);
+
+                Rect ro = Rect(p.second,trackedLeftovers[i].second.patch.size()) & Rect(0,0,orig.cols,orig.rows);
+                if(ro.width > 0 && ro.height > 0)
+                    addWeighted(orig(ro), 0.5, trackedLeftovers[i].second.patch, 0.5, 0.0, trackedLeftovers[i].second.patch);
                 //                    orig(Rect(p.second,trackedLeftovers[i].second.patch.size())).copyTo(trackedLeftovers[i].second.patch);
             } else {
+                //leftover is most likely not found
                 trackedLeftovers[i].second.times_seen--;
                 
                 Size lookupSize = trackedLeftovers[i].second.patch.size();
-                Mat blurry; cvtColor(orig(Rect(p.second,lookupSize)), blurry, CV_BGR2GRAY);
-                adaptiveThreshold(blurry, blurry, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 31, 20);
-                int white = countNonZero(blurry);
-                float black_to_white_ratio = (float)(lookupSize.width*lookupSize.height - white) / (float)white;
-                if(black_to_white_ratio < 0.1) continue;
+                Rect ro = Rect(p.second,lookupSize) & Rect(0,0,orig.cols,orig.rows);
+                if(ro.width > 0 && ro.height > 0) {
+                    Mat blurry; cvtColor(orig(ro), blurry, CV_BGR2GRAY);
+                    adaptiveThreshold(blurry, blurry, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 31, 20);
+                    int white = countNonZero(blurry);
+                    float black_to_white_ratio = (float)(lookupSize.width*lookupSize.height - white) / (float)white;
+                    if(black_to_white_ratio < 0.1) continue;
+                }
             }
             
             //after so many frames, loose track of leftover
@@ -846,7 +856,11 @@ public:
             
             int trackedLineMidpY = (trackedLine.line.y + trackedLine.line.x*img.cols + trackedLine.line.y)/2;
             int origFocusAreaMidpY = origFocusArea.y + origFocusArea.height/2;
+            int origFocusAreaLowerMidpY = origFocusArea.y + origFocusArea.height*0.33;
             
+            int escapeD = cvRound(fabsf(trackedLineMidpY-origFocusAreaLowerMidpY) / 10.0f);
+            escapeDistance(escapeD);
+
             if((trackedWords.size() == 0 && trackedLeftovers.size() == 0) ||
                fabsf(trackedLineMidpY-origFocusAreaMidpY) > origFocusArea.height*0.75)
             {

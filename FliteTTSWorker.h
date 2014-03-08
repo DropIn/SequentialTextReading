@@ -26,6 +26,7 @@ class FliteTTSWorker : public QObject, public QRunnable {
     Q_OBJECT
     
 //    QAudioOutput*    m_audioOutput;
+    QAudioDeviceInfo* info;
     QAudioFormat     m_format;
     QBuffer          b;
     std::string      text;
@@ -37,6 +38,12 @@ public slots:
     void finishedPlaying(QAudio::State state);
     
 public:
+    FliteTTSWorker() {
+        info = new QAudioDeviceInfo(QAudioDeviceInfo::defaultOutputDevice());
+    }
+    ~FliteTTSWorker() {
+        delete info;
+    }
     void setVoice(cst_voice *v) { voice = v; }
     void setText(const std::string& t) { text = t;}
     void run();

@@ -13,12 +13,17 @@
 #include <QFileDialog>
 #include "FliteTTSBridge.h"
 #include "ArduinoDriver.h"
+#include <phonon/phonon>
 
 class ViewController : public QFrame {
     Q_OBJECT
     
     FliteTTSBridge ftb;
 //    ArduinoDriver ad;
+    Phonon::MediaObject *ding;
+    Phonon::MediaObject *tone;
+    Phonon::MediaObject *dingding;
+    int lastDistance;
 
 public:
     ViewController(QWidget* parent = 0);
@@ -49,6 +54,7 @@ public slots:
     void sendDistance(int val);
     void sendClear();
     void trainFingertip();
+    void updateDistance(int val);
 };
 
 #endif

@@ -35,11 +35,11 @@ void 		OpenCVCameraThread::stopOcvCamera() 					{ running = false; }
 void 		OpenCVCameraThread::setDownscale(bool b)		 		{ downscale = b; }
 void 		OpenCVCameraThread::setPaused(bool b)	 				{ paused = b; }
 
-void OpenCVCameraThread::endOfLine() {send(ArduinoDriver::END_OF_LINE);}
-void OpenCVCameraThread::textFound() {send(ArduinoDriver::TEXT_FOUND);}
+void OpenCVCameraThread::endOfLine() {send(ArduinoDriver::END_OF_LINE); emit signalEndOfLine();}
+void OpenCVCameraThread::textFound() {send(ArduinoDriver::TEXT_FOUND); emit signalTextFound();}
 void OpenCVCameraThread::escapeUp() {send(ArduinoDriver::UP);}
 void OpenCVCameraThread::escapeDown() {send(ArduinoDriver::DOWN);}
-void OpenCVCameraThread::escapeDistance(int d) {send(d);}
+void OpenCVCameraThread::escapeDistance(int d) { send(d); emit signalEscapeDistance(d);}
 void OpenCVCameraThread::send(char c) { arduinoCommandQueue.uniquePush(c); }
 void OpenCVCameraThread::connectSerial(const string& port) { arduinoPort = port; arduinoConnect = true; }
 

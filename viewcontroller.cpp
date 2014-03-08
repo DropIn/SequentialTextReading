@@ -27,16 +27,23 @@ ViewController::ViewController(QWidget* parent):QFrame(parent) {
 //    connect(&ocvt, SIGNAL(newFrame(const QImage&)), this, SLOT(newFrame(const QImage&)));
     connect(&ocvt, SIGNAL(newFrame()), this, SLOT(newFrame()));
     connect(&ocvt,SIGNAL(newWordFound(std::string)), this, SLOT(newWordFound(std::string)));
-//    connect(&ocvt,SIGNAL(textFound()), this, SLOT(textFound()));
-//    connect(&ocvt,SIGNAL(endOfLine()), this, SLOT(endOfLine()));
-//    connect(&ocvt,SIGNAL(escapeDistance(int)), this, SLOT(sendDistance(int)));
+    connect(&ocvt,SIGNAL(signalTextFound()), this, SLOT(textFound()));
+    connect(&ocvt,SIGNAL(signalEndOfLine()), this, SLOT(endOfLine()));
+    connect(&ocvt,SIGNAL(signalEscapeDistance(int)), this, SLOT(updateDistance(int)));
 
     ocvt.setDownscale(false);
     ocvt.start();
 
     ftb.init();
 
+    ding = Phonon::createPlayer(Phonon::NoCategory, Phonon::MediaSource("../91926__corsica-s__ding_short.wav"));
+    dingding = Phonon::createPlayer(Phonon::NoCategory, Phonon::MediaSource("../159158__daenn__din-ding.wav"));
+    tone = Phonon::createPlayer(Phonon::NoCategory, Phonon::MediaSource("../80360__hyderpotter__nu-tone.wav"));
     
+    connect(ding,SIGNAL(finished()),ding,SLOT(stop()));
+    connect(dingding,SIGNAL(finished()),dingding,SLOT(stop()));
+    connect(tone,SIGNAL(finished()),tone,SLOT(stop()));
+
 //    fillPortsInfo();
 }
 
@@ -142,18 +149,36 @@ void ViewController::newWordFound(std::string s) {
 }
 
 void ViewController::textFound() {
+    qDebug() << "text found";
     QPushButton* pb = parentWidget()->findChild<QPushButton*>("pushButton_textFound");
     pb->setStyleSheet("color: red;");
-    ocvt.send(ArduinoDriver::TEXT_FOUND);
+//    ocvt.send(ArduinoDriver::TEXT_FOUND);
+    dingding->play();
 };
 void ViewController::endOfLine() {
+    qDebug() << "end of line";
     QPushButton* pb = parentWidget()->findChild<QPushButton*>("pushButton_endOfLine");
     pb->setStyleSheet("color: red;");
-    ocvt.send(ArduinoDriver::END_OF_LINE);
+//    ocvt.send(ArduinoDriver::END_OF_LINE);
+    ding->play();
+    tone->stop();
 };
 void ViewController::sendUp() {ocvt.send(ArduinoDriver::UP);};
 void ViewController::sendDown() {ocvt.send(ArduinoDriver::DOWN);};
 void ViewController::sendDistance(int val) {ocvt.send(val);};
 void ViewController::sendClear() {ocvt.send(ArduinoDriver::CLEAR);};
+void ViewController::updateDistance(int val) {
+    if(val > 10) return;
+    if(lastDistance == val) return;
+    lastDistance = val;
+
+    qDebug() << "distance " << val;
+
+    tone->stop();
+    QSlider* slider = parentWidget()->findChild<QSlider*>("horizontalSlider_dist");
+    slider->setValue(95 + val);
+    ((Phonon::AudioOutput*)tone->outputPaths()[0].sink())->setVolume((float)val / 10.0f);
+    tone->play();
+}
 
 void ViewController::trainFingertip() { ocvt.str.fd.train(); }
