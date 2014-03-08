@@ -29,7 +29,7 @@ ViewController::ViewController(QWidget* parent):QFrame(parent) {
     connect(&ocvt,SIGNAL(newWordFound(std::string)), this, SLOT(newWordFound(std::string)));
     connect(&ocvt,SIGNAL(signalTextFound()), this, SLOT(textFound()));
     connect(&ocvt,SIGNAL(signalEndOfLine()), this, SLOT(endOfLine()));
-    connect(&ocvt,SIGNAL(signalEscapeDistance(int)), this, SLOT(updateDistance(int)));
+    connect(&ocvt,SIGNAL(signalEscapeDistance(int,float)), this, SLOT(updateDistance(int,float)));
 
     ocvt.setDownscale(false);
     ocvt.start();
@@ -39,10 +39,12 @@ ViewController::ViewController(QWidget* parent):QFrame(parent) {
     ding = Phonon::createPlayer(Phonon::NoCategory, Phonon::MediaSource("../91926__corsica-s__ding_short.wav"));
     dingding = Phonon::createPlayer(Phonon::NoCategory, Phonon::MediaSource("../159158__daenn__din-ding.wav"));
     tone = Phonon::createPlayer(Phonon::NoCategory, Phonon::MediaSource("../80360__hyderpotter__nu-tone.wav"));
+    tonelow = Phonon::createPlayer(Phonon::NoCategory, Phonon::MediaSource("../tone-lowpitch.wav"));
     
     connect(ding,SIGNAL(finished()),ding,SLOT(stop()));
     connect(dingding,SIGNAL(finished()),dingding,SLOT(stop()));
     connect(tone,SIGNAL(finished()),tone,SLOT(stop()));
+    connect(tonelow,SIGNAL(finished()),tonelow,SLOT(stop()));
 
 //    fillPortsInfo();
 }
@@ -167,18 +169,28 @@ void ViewController::sendUp() {ocvt.send(ArduinoDriver::UP);};
 void ViewController::sendDown() {ocvt.send(ArduinoDriver::DOWN);};
 void ViewController::sendDistance(int val) {ocvt.send(val);};
 void ViewController::sendClear() {ocvt.send(ArduinoDriver::CLEAR);};
-void ViewController::updateDistance(int val) {
+void ViewController::updateDistance(int val, float ang) {
     if(val > 10) return;
-    if(lastDistance == val) return;
-    lastDistance = val;
+    if(lastDistance != val) {
+        lastDistance = val;
 
-    qDebug() << "distance " << val;
+        qDebug() << "distance " << val;
 
-    tone->stop();
-    QSlider* slider = parentWidget()->findChild<QSlider*>("horizontalSlider_dist");
-    slider->setValue(95 + val);
-    ((Phonon::AudioOutput*)tone->outputPaths()[0].sink())->setVolume((float)val / 10.0f);
-    tone->play();
+        tone->stop();
+        QSlider* slider = parentWidget()->findChild<QSlider*>("horizontalSlider_dist");
+        slider->setValue(95 + val);
+        ((Phonon::AudioOutput*)tone->outputPaths()[0].sink())->setVolume((float)val / 10.0f);
+        tone->play();
+    }
+    if(fabsf(lastAngle - ang) > 0.05) {
+        lastAngle = ang;
+
+        qDebug() << "angle " << ang;
+
+        tonelow->stop();
+        ((Phonon::AudioOutput*)tonelow->outputPaths()[0].sink())->setVolume(fabsf(ang) / 0.3f);
+        tonelow->play();
+    }
 }
 
 void ViewController::trainFingertip() { ocvt.str.fd.train(); }

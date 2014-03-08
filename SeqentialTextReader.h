@@ -696,7 +696,7 @@ public:
         virtual void textFound() = 0;
         virtual void escapeUp() = 0;
         virtual void escapeDown() = 0;
-        virtual void escapeDistance(int) = 0;
+        virtual void escapeDistance(int,float) = 0;
         void setThresh(int t) {mySTR->setThresh(t);}
         void processImage(Mat& img) {mySTR->processImage(img);}
     };
@@ -711,7 +711,7 @@ public:
     void textFound() {if(myHandler) myHandler->textFound();};
     void escapeUp() {if(myHandler) myHandler->escapeUp();};
     void escapeDown() {if(myHandler) myHandler->escapeDown();};
-    void escapeDistance(int d) {if(myHandler) myHandler->escapeDistance(d);};
+    void escapeDistance(int d,float a) {if(myHandler) myHandler->escapeDistance(d,a);};
     
     void setThresh(int t) {
         ADAPTIVE_THRESH = t - (t%2) + 1;
@@ -859,7 +859,7 @@ public:
             int origFocusAreaLowerMidpY = origFocusArea.y + origFocusArea.height*0.33;
             
             int escapeD = cvRound(fabsf(trackedLineMidpY-origFocusAreaLowerMidpY) / 10.0f);
-            escapeDistance(escapeD);
+            escapeDistance(escapeD,trackedLine.line.x);
 
             if((trackedWords.size() == 0 && trackedLeftovers.size() == 0) ||
                fabsf(trackedLineMidpY-origFocusAreaMidpY) > origFocusArea.height*0.75)

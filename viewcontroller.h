@@ -22,8 +22,10 @@ class ViewController : public QFrame {
 //    ArduinoDriver ad;
     Phonon::MediaObject *ding;
     Phonon::MediaObject *tone;
+    Phonon::MediaObject *tonelow;
     Phonon::MediaObject *dingding;
     int lastDistance;
+    float lastAngle;
 
 public:
     ViewController(QWidget* parent = 0);
@@ -54,7 +56,7 @@ public slots:
     void sendDistance(int val);
     void sendClear();
     void trainFingertip();
-    void updateDistance(int val);
+    void updateDistance(int,float);
 };
 
 #endif

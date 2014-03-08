@@ -39,7 +39,7 @@ void OpenCVCameraThread::endOfLine() {send(ArduinoDriver::END_OF_LINE); emit sig
 void OpenCVCameraThread::textFound() {send(ArduinoDriver::TEXT_FOUND); emit signalTextFound();}
 void OpenCVCameraThread::escapeUp() {send(ArduinoDriver::UP);}
 void OpenCVCameraThread::escapeDown() {send(ArduinoDriver::DOWN);}
-void OpenCVCameraThread::escapeDistance(int d) { send(d); emit signalEscapeDistance(d);}
+void OpenCVCameraThread::escapeDistance(int d, float a) { send(d); emit signalEscapeDistance(d,a);}
 void OpenCVCameraThread::send(char c) { arduinoCommandQueue.uniquePush(c); }
 void OpenCVCameraThread::connectSerial(const string& port) { arduinoPort = port; arduinoConnect = true; }
 

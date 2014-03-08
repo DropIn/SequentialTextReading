@@ -143,14 +143,14 @@ signals:
     void newWordFound(std::string str);
     void signalEndOfLine();
     void signalTextFound();
-    void signalEscapeDistance(int d);
+    void signalEscapeDistance(int d,float a);
 
 public:
     void endOfLine();
     void textFound();
     void escapeUp();
     void escapeDown();
-    void escapeDistance(int d);
+    void escapeDistance(int d,float a);
     void send(char c);
     void connectSerial(const string& port);
 };
